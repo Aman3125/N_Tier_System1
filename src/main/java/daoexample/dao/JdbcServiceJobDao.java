@@ -11,6 +11,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class JdbcServiceJobDao implements ServiceJobDao {
 
@@ -156,6 +158,71 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             ps.setInt(1, id);
             return ps.executeUpdate() == 1;
         }
+    }
+
+    // ========== F8: FILTER METHOD ==========
+    @Override
+    public List<ServiceJob> findServiceJobsByFilter(Predicate<ServiceJob> filter) throws Exception {
+        return getAllServiceJobs().stream()
+                .filter(filter)
+                .collect(Collectors.toList());
+    }
+
+    // ========== F9: JSON METHODS ==========
+    @Override
+    public String serviceJobToJson(ServiceJob job) throws Exception {
+        return "{"
+                + "\"serviceJobId\":" + job.getServiceJobId() + ","
+                + "\"vehicleId\":" + job.getVehicleId() + ","
+                + "\"description\":\"" + job.getDescription() + "\","
+                + "\"status\":\"" + job.getStatus() + "\","
+                + "\"cost\":" + job.getCost() + ","
+                + "\"dateCreated\":\"" + job.getDateCreated() + "\""
+                + "}";
+    }
+
+    @Override
+    public ServiceJob serviceJobFromJson(String json) throws Exception {
+        // Remove { and } from the ends
+        json = json.substring(1, json.length() - 1);
+        String[] pairs = json.split(",");
+
+        int serviceJobId = 0, vehicleId = 0;
+        String description = "", status = "";
+        double cost = 0.0;
+        java.time.LocalDate dateCreated = java.time.LocalDate.now();
+
+        for (String pair : pairs) {
+            String[] keyValue = pair.split(":", 2);
+
+            if (keyValue.length < 2) {
+                continue;
+            }
+            String key = keyValue[0].replace("\"", "");
+            String value = keyValue[1].replace("\"", "");
+
+            switch (key) {
+                case "serviceJobId": serviceJobId = Integer.parseInt(value); break;
+                case "vehicleId": vehicleId = Integer.parseInt(value); break;
+                case "description": description = value; break;
+                case "status": status = value; break;
+                case "cost": cost = Double.parseDouble(value); break;
+                case "dateCreated": dateCreated = java.time.LocalDate.parse(value); break;
+            }
+        }
+
+        return new ServiceJob(serviceJobId, vehicleId, description, status, cost, dateCreated);
+    }
+
+    @Override
+    public String serviceJobListToJson(List<ServiceJob> jobs) throws Exception {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < jobs.size(); i++) {
+            if (i > 0) json.append(",");
+            json.append(serviceJobToJson(jobs.get(i)));
+        }
+        json.append("]");
+        return json.toString();
     }
 
     private ServiceJob mapRow(ResultSet rs) throws Exception {

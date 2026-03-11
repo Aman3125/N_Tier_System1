@@ -12,6 +12,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /// <summary>
 /// JDBC implementation of TaskDao.
@@ -168,5 +170,71 @@ public class JdbcCustomerDao implements CustomerDao {
         String address = rs.getString("address");
 
         return new Customer(customerId, firstName, lastName, phoneNumber, email, address);
+    }
+
+    // F8: Find customers matching a filter
+    @Override
+    public List<Customer> findCustomersByFilter(Predicate<Customer> filter) throws Exception {
+        return getAllCustomers().stream()
+                .filter(filter)
+                .collect(Collectors.toList());
+    }
+
+    // F9: Convert a single customer to JSON
+    @Override
+    public String customerToJson(Customer customer) throws Exception {
+        return "{"
+                + "\"customerId\":" + customer.getCustomerId() + ","
+                + "\"firstName\":\"" + customer.getFirstName() + "\","
+                + "\"lastName\":\"" + customer.getLastName() + "\","
+                + "\"phoneNumber\":\"" + customer.getPhoneNumber() + "\","
+                + "\"email\":\"" + customer.getEmail() + "\","
+                + "\"address\":\"" + customer.getAddress() + "\""
+                + "}";
+    }
+
+    // F9: Convert JSON to Customer object
+    @Override
+    public Customer customerFromJson(String json) throws Exception {
+        // Remove { and } from the ends
+        json = json.substring(1, json.length() - 1);
+        String[] pairs = json.split(",");
+
+        int id = 0;
+        String firstName = "", lastName = "", phone = "", email = "", address = "";
+
+        for (String pair : pairs) {
+            String[] keyValue = pair.split(":", 2);   // split only once
+
+            if (keyValue.length < 2) {               // safety check
+                continue;
+            }
+
+            String key = keyValue[0].replace("\"", "");
+            String value = keyValue[1].replace("\"", "");
+
+            switch (key) {
+                case "customerId": id = Integer.parseInt(value); break;
+                case "firstName": firstName = value; break;
+                case "lastName": lastName = value; break;
+                case "phoneNumber": phone = value; break;
+                case "email": email = value; break;
+                case "address": address = value; break;
+            }
+        }
+
+        return new Customer(id, firstName, lastName, phone, email, address);
+    }
+
+    // F9: Convert a list of customers to JSON
+    @Override
+    public String customerListToJson(List<Customer> customers) throws Exception {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < customers.size(); i++) {
+            if (i > 0) json.append(",");
+            json.append(customerToJson(customers.get(i)));
+        }
+        json.append("]");
+        return json.toString();
     }
 }

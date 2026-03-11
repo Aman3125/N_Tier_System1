@@ -10,6 +10,8 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 public class JdbcVehicleDao implements VehicleDao {
 
@@ -152,6 +154,70 @@ public class JdbcVehicleDao implements VehicleDao {
             ps.setInt(1, id);
             return ps.executeUpdate() == 1;
         }
+    }
+
+    // ========== F8: FILTER METHOD ==========
+    @Override
+    public List<Vehicle> findVehiclesByFilter(Predicate<Vehicle> filter) throws Exception {
+        return getAllVehicles().stream()
+                .filter(filter)
+                .collect(Collectors.toList());
+    }
+
+    // ========== F9: JSON METHODS ==========
+    @Override
+    public String vehicleToJson(Vehicle vehicle) throws Exception {
+        return "{"
+                + "\"vehicleId\":" + vehicle.getVehicleId() + ","
+                + "\"customerId\":" + vehicle.getCustomerId() + ","
+                + "\"make\":\"" + vehicle.getMake() + "\","
+                + "\"model\":\"" + vehicle.getModel() + "\","
+                + "\"registrationNumber\":\"" + vehicle.getRegistrationNumber() + "\","
+                + "\"year\":" + vehicle.getYear()
+                + "}";
+    }
+
+    @Override
+    public Vehicle vehicleFromJson(String json) throws Exception {
+        // Remove { and } from the ends
+        json = json.substring(1, json.length() - 1);
+        String[] pairs = json.split(",");
+
+        int vehicleId = 0, customerId = 0, year = 0;
+        String make = "", model = "", registrationNumber = "";
+
+        for (String pair : pairs) {
+            String[] keyValue = pair.split(":", 2);
+
+            if (keyValue.length < 2) {
+                continue;
+            }
+
+            String key = keyValue[0].replace("\"", "");
+            String value = keyValue[1].replace("\"", "");
+
+            switch (key) {
+                case "vehicleId": vehicleId = Integer.parseInt(value); break;
+                case "customerId": customerId = Integer.parseInt(value); break;
+                case "make": make = value; break;
+                case "model": model = value; break;
+                case "registrationNumber": registrationNumber = value; break;
+                case "year": year = Integer.parseInt(value); break;
+            }
+        }
+
+        return new Vehicle(vehicleId, customerId, make, model, registrationNumber, year);
+    }
+
+    @Override
+    public String vehicleListToJson(List<Vehicle> vehicles) throws Exception {
+        StringBuilder json = new StringBuilder("[");
+        for (int i = 0; i < vehicles.size(); i++) {
+            if (i > 0) json.append(",");
+            json.append(vehicleToJson(vehicles.get(i)));
+        }
+        json.append("]");
+        return json.toString();
     }
 
     private Vehicle mapRow(ResultSet rs) throws Exception {
