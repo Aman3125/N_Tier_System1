@@ -20,7 +20,7 @@ import daoexample.domain.Vehicle;
 
 
 // F10: Each connected client is handled on a separate thread.
-// F12: Server reads JSON request, calls DAO, returns JSON response.
+// F11: All replies are wrapped in ServerResponse<T> and sent as JSON.
 public class ClientHandler implements Runnable {
 
     private final Socket clientSocket;
@@ -41,15 +41,26 @@ public class ClientHandler implements Runnable {
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true)
         ) {
             String requestJson = in.readLine();
-            ClientRequest request = gson.fromJson(requestJson, ClientRequest.class);
 
+            if (requestJson == null || requestJson.isBlank()) {
+                out.println(gson.toJson(ServerResponse.error("Empty request received.")));
+                return;
+            }
+
+            ClientRequest request = gson.fromJson(requestJson, ClientRequest.class);
             String responseJson = handleRequest(request);
+
             out.println(responseJson);
 
         } catch (Exception e) {
             try {
                 PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
                 out.println(gson.toJson(ServerResponse.error("Server error: " + e.getMessage())));
+            } catch (Exception ignored) {
+            }
+        } finally {
+            try {
+                clientSocket.close();
             } catch (Exception ignored) {
             }
         }
@@ -60,13 +71,20 @@ public class ClientHandler implements Runnable {
             return gson.toJson(ServerResponse.error("Invalid request"));
         }
 
+        if (request.getEntity() == null || request.getAction() == null) {
+            return gson.toJson(ServerResponse.error("Request must contain entity and action"));
+        }
+
         switch (request.getEntity().toUpperCase()) {
             case "CUSTOMER":
                 return handleCustomer(request);
+
             case "VEHICLE":
                 return handleVehicle(request);
+
             case "SERVICEJOB":
                 return handleServiceJob(request);
+
             default:
                 return gson.toJson(ServerResponse.error("Unknown entity"));
         }
@@ -75,15 +93,23 @@ public class ClientHandler implements Runnable {
     private String handleCustomer(ClientRequest request) throws Exception {
         switch (request.getAction().toUpperCase()) {
             case "GET_BY_ID":
+                if (request.getId() == null) {
+                    return gson.toJson(ServerResponse.error("Customer ID is required"));
+                }
+
                 Optional<Customer> customer = customerDao.getCustomerById(request.getId());
                 if (customer.isPresent()) {
-                    return gson.toJson(ServerResponse.success("Customer found", customer.get()));
+                    ServerResponse<Customer> response =
+                            ServerResponse.success("Customer found", customer.get());
+                    return gson.toJson(response);
                 }
                 return gson.toJson(ServerResponse.error("Customer not found"));
 
             case "GET_ALL":
                 List<Customer> customers = customerDao.getAllCustomers();
-                return gson.toJson(ServerResponse.success("Customers retrieved", customers));
+                ServerResponse<List<Customer>> allCustomersResponse =
+                        ServerResponse.success("Customers retrieved", customers);
+                return gson.toJson(allCustomersResponse);
 
             default:
                 return gson.toJson(ServerResponse.error("Unsupported action"));
@@ -93,15 +119,23 @@ public class ClientHandler implements Runnable {
     private String handleVehicle(ClientRequest request) throws Exception {
         switch (request.getAction().toUpperCase()) {
             case "GET_BY_ID":
+                if (request.getId() == null) {
+                    return gson.toJson(ServerResponse.error("Vehicle ID is required"));
+                }
+
                 Optional<Vehicle> vehicle = vehicleDao.getVehicleById(request.getId());
                 if (vehicle.isPresent()) {
-                    return gson.toJson(ServerResponse.success("Vehicle found", vehicle.get()));
+                    ServerResponse<Vehicle> response =
+                            ServerResponse.success("Vehicle found", vehicle.get());
+                    return gson.toJson(response);
                 }
                 return gson.toJson(ServerResponse.error("Vehicle not found"));
 
             case "GET_ALL":
                 List<Vehicle> vehicles = vehicleDao.getAllVehicles();
-                return gson.toJson(ServerResponse.success("Vehicles retrieved", vehicles));
+                ServerResponse<List<Vehicle>> allVehiclesResponse =
+                        ServerResponse.success("Vehicles retrieved", vehicles);
+                return gson.toJson(allVehiclesResponse);
 
             default:
                 return gson.toJson(ServerResponse.error("Unsupported action"));
@@ -111,15 +145,23 @@ public class ClientHandler implements Runnable {
     private String handleServiceJob(ClientRequest request) throws Exception {
         switch (request.getAction().toUpperCase()) {
             case "GET_BY_ID":
+                if (request.getId() == null) {
+                    return gson.toJson(ServerResponse.error("Service job ID is required"));
+                }
+
                 Optional<ServiceJob> job = serviceJobDao.getServiceJobById(request.getId());
                 if (job.isPresent()) {
-                    return gson.toJson(ServerResponse.success("Service job found", job.get()));
+                    ServerResponse<ServiceJob> response =
+                            ServerResponse.success("Service job found", job.get());
+                    return gson.toJson(response);
                 }
                 return gson.toJson(ServerResponse.error("Service job not found"));
 
             case "GET_ALL":
                 List<ServiceJob> jobs = serviceJobDao.getAllServiceJobs();
-                return gson.toJson(ServerResponse.success("Service jobs retrieved", jobs));
+                ServerResponse<List<ServiceJob>> allJobsResponse =
+                        ServerResponse.success("Service jobs retrieved", jobs);
+                return gson.toJson(allJobsResponse);
 
             default:
                 return gson.toJson(ServerResponse.error("Unsupported action"));

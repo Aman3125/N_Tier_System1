@@ -4,7 +4,6 @@ import daoexample.db.DatabaseConnection;
 import daoexample.domain.ServiceJob;
 
 import java.sql.Connection;
-import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Statement;
@@ -14,11 +13,14 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+// F2: JDBC implementation of ServiceJobDao using PreparedStatement for all SQL operations.
 public class JdbcServiceJobDao implements ServiceJobDao {
 
     public JdbcServiceJobDao() {
     }
 
+    // F6: Inserts a new service job record and returns the populated DTO
+    // including the auto-generated ID from getGeneratedKeys().
     @Override
     public ServiceJob insert(ServiceJob serviceJob) throws Exception {
         if (serviceJob == null) {
@@ -34,7 +36,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             ps.setString(2, serviceJob.getDescription());
             ps.setString(3, serviceJob.getStatus());
             ps.setDouble(4, serviceJob.getCost());
-            ps.setDate(5, Date.valueOf(serviceJob.getDateCreated()));
+            ps.setString(5, serviceJob.getDateCreated());
 
             int rows = ps.executeUpdate();
 
@@ -61,6 +63,8 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
+    // F4: Retrieves a service job by ID and returns Optional<ServiceJob>.
+    // Returns Optional.empty() if no matching record exists.
     @Override
     public Optional<ServiceJob> getServiceJobById(int id) throws Exception {
         if (id <= 0) {
@@ -85,6 +89,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
+    // F3: Retrieves all service job records and returns them as a List<ServiceJob>.
     @Override
     public List<ServiceJob> getAllServiceJobs() throws Exception {
         String sql = "SELECT service_job_id, vehicle_id, description, status, cost, date_created " +
@@ -104,6 +109,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
+    // F7: Updates an existing service job by ID and returns the updated ServiceJob DTO.
     @Override
     public ServiceJob updateServiceJob(int id, ServiceJob serviceJob) throws Exception {
         if (id <= 0) {
@@ -124,7 +130,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             ps.setString(2, serviceJob.getDescription());
             ps.setString(3, serviceJob.getStatus());
             ps.setDouble(4, serviceJob.getCost());
-            ps.setDate(5, Date.valueOf(serviceJob.getDateCreated()));
+            ps.setString(5, serviceJob.getDateCreated());
             ps.setInt(6, id);
 
             int rows = ps.executeUpdate();
@@ -144,6 +150,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
+    // F5: Deletes a service job by ID and returns true if one row was removed.
     @Override
     public boolean deleteServiceJobById(int id) throws Exception {
         if (id <= 0) {
@@ -160,7 +167,6 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
-    // ========== F8: FILTER METHOD ==========
     @Override
     public List<ServiceJob> findServiceJobsByFilter(Predicate<ServiceJob> filter) throws Exception {
         return getAllServiceJobs().stream()
@@ -168,7 +174,6 @@ public class JdbcServiceJobDao implements ServiceJobDao {
                 .collect(Collectors.toList());
     }
 
-    // ========== F9: JSON METHODS ==========
     @Override
     public String serviceJobToJson(ServiceJob job) throws Exception {
         return "{"
@@ -183,14 +188,15 @@ public class JdbcServiceJobDao implements ServiceJobDao {
 
     @Override
     public ServiceJob serviceJobFromJson(String json) throws Exception {
-        // Remove { and } from the ends
         json = json.substring(1, json.length() - 1);
         String[] pairs = json.split(",");
 
-        int serviceJobId = 0, vehicleId = 0;
-        String description = "", status = "";
+        int serviceJobId = 0;
+        int vehicleId = 0;
+        String description = "";
+        String status = "";
         double cost = 0.0;
-        java.time.LocalDate dateCreated = java.time.LocalDate.now();
+        String dateCreated = "";
 
         for (String pair : pairs) {
             String[] keyValue = pair.split(":", 2);
@@ -198,16 +204,29 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             if (keyValue.length < 2) {
                 continue;
             }
+
             String key = keyValue[0].replace("\"", "");
             String value = keyValue[1].replace("\"", "");
 
             switch (key) {
-                case "serviceJobId": serviceJobId = Integer.parseInt(value); break;
-                case "vehicleId": vehicleId = Integer.parseInt(value); break;
-                case "description": description = value; break;
-                case "status": status = value; break;
-                case "cost": cost = Double.parseDouble(value); break;
-                case "dateCreated": dateCreated = java.time.LocalDate.parse(value); break;
+                case "serviceJobId":
+                    serviceJobId = Integer.parseInt(value);
+                    break;
+                case "vehicleId":
+                    vehicleId = Integer.parseInt(value);
+                    break;
+                case "description":
+                    description = value;
+                    break;
+                case "status":
+                    status = value;
+                    break;
+                case "cost":
+                    cost = Double.parseDouble(value);
+                    break;
+                case "dateCreated":
+                    dateCreated = value;
+                    break;
             }
         }
 
@@ -217,10 +236,14 @@ public class JdbcServiceJobDao implements ServiceJobDao {
     @Override
     public String serviceJobListToJson(List<ServiceJob> jobs) throws Exception {
         StringBuilder json = new StringBuilder("[");
+
         for (int i = 0; i < jobs.size(); i++) {
-            if (i > 0) json.append(",");
+            if (i > 0) {
+                json.append(",");
+            }
             json.append(serviceJobToJson(jobs.get(i)));
         }
+
         json.append("]");
         return json.toString();
     }
@@ -231,7 +254,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         String description = rs.getString("description");
         String status = rs.getString("status");
         double cost = rs.getDouble("cost");
-        java.time.LocalDate dateCreated = rs.getDate("date_created").toLocalDate();
+        String dateCreated = rs.getString("date_created");
 
         return new ServiceJob(serviceJobId, vehicleId, description, status, cost, dateCreated);
     }
