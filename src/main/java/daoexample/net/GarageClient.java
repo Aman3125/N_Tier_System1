@@ -85,6 +85,8 @@ public class GarageClient {
         ) {
             out.println(gson.toJson(request));
             return in.readLine();
+        } catch (java.net.ConnectException e) {
+            throw new Exception("Cannot connect to server. Make sure GarageServer is running first.");
         }
     }
 
@@ -92,8 +94,18 @@ public class GarageClient {
         ClientRequest request = new ClientRequest("CUSTOMER", "GET_BY_ID", id);
         String json = sendRequest(request);
 
+        if (json == null || json.isBlank()) {
+            System.out.println("Client error: No response received from server.");
+            return;
+        }
+
         Type type = new TypeToken<ServerResponse<Customer>>() {}.getType();
         ServerResponse<Customer> response = gson.fromJson(json, type);
+
+        if (response == null) {
+            System.out.println("Client error: Server returned invalid JSON.");
+            return;
+        }
 
         System.out.println(response.getStatus());
         System.out.println(response.getMessage());
@@ -104,11 +116,22 @@ public class GarageClient {
         ClientRequest request = new ClientRequest("CUSTOMER", "GET_ALL", null);
         String json = sendRequest(request);
 
+        if (json == null || json.isBlank()) {
+            System.out.println("Client error: No response received from server.");
+            return;
+        }
+
         Type type = new TypeToken<ServerResponse<List<Customer>>>() {}.getType();
         ServerResponse<List<Customer>> response = gson.fromJson(json, type);
 
+        if (response == null) {
+            System.out.println("Client error: Server returned invalid JSON.");
+            return;
+        }
+
         System.out.println(response.getStatus());
         System.out.println(response.getMessage());
+
         if (response.getData() != null) {
             for (Customer c : response.getData()) {
                 System.out.println(c);
@@ -120,8 +143,18 @@ public class GarageClient {
         ClientRequest request = new ClientRequest("VEHICLE", "GET_BY_ID", id);
         String json = sendRequest(request);
 
+        if (json == null || json.isBlank()) {
+            System.out.println("Client error: No response received from server.");
+            return;
+        }
+
         Type type = new TypeToken<ServerResponse<Vehicle>>() {}.getType();
         ServerResponse<Vehicle> response = gson.fromJson(json, type);
+
+        if (response == null) {
+            System.out.println("Client error: Server returned invalid JSON.");
+            return;
+        }
 
         System.out.println(response.getStatus());
         System.out.println(response.getMessage());
@@ -132,11 +165,22 @@ public class GarageClient {
         ClientRequest request = new ClientRequest("VEHICLE", "GET_ALL", null);
         String json = sendRequest(request);
 
+        if (json == null || json.isBlank()) {
+            System.out.println("Client error: No response received from server.");
+            return;
+        }
+
         Type type = new TypeToken<ServerResponse<List<Vehicle>>>() {}.getType();
         ServerResponse<List<Vehicle>> response = gson.fromJson(json, type);
 
+        if (response == null) {
+            System.out.println("Client error: Server returned invalid JSON.");
+            return;
+        }
+
         System.out.println(response.getStatus());
         System.out.println(response.getMessage());
+
         if (response.getData() != null) {
             for (Vehicle v : response.getData()) {
                 System.out.println(v);
@@ -148,8 +192,18 @@ public class GarageClient {
         ClientRequest request = new ClientRequest("SERVICEJOB", "GET_BY_ID", id);
         String json = sendRequest(request);
 
+        if (json == null || json.isBlank()) {
+            System.out.println("Client error: No response received from server.");
+            return;
+        }
+
         Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
         ServerResponse<ServiceJob> response = gson.fromJson(json, type);
+
+        if (response == null) {
+            System.out.println("Client error: Server returned invalid JSON.");
+            return;
+        }
 
         System.out.println(response.getStatus());
         System.out.println(response.getMessage());
@@ -160,11 +214,22 @@ public class GarageClient {
         ClientRequest request = new ClientRequest("SERVICEJOB", "GET_ALL", null);
         String json = sendRequest(request);
 
+        if (json == null || json.isBlank()) {
+            System.out.println("Client error: No response received from server.");
+            return;
+        }
+
         Type type = new TypeToken<ServerResponse<List<ServiceJob>>>() {}.getType();
         ServerResponse<List<ServiceJob>> response = gson.fromJson(json, type);
 
+        if (response == null) {
+            System.out.println("Client error: Server returned invalid JSON.");
+            return;
+        }
+
         System.out.println(response.getStatus());
         System.out.println(response.getMessage());
+
         if (response.getData() != null) {
             for (ServiceJob s : response.getData()) {
                 System.out.println(s);

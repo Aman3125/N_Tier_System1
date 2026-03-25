@@ -1,7 +1,7 @@
 package daoexample.domain;
 
-import java.time.LocalDate;
-
+// F1: DTO entity class representing a ServiceJob table record.
+// Fields are private and validated through setters to enforce valid data.
 public class ServiceJob {
 
     private int serviceJobId;
@@ -9,12 +9,10 @@ public class ServiceJob {
     private String description;
     private String status;
     private double cost;
-    private LocalDate dateCreated;
+    private String dateCreated;
 
-    public ServiceJob() {
-    }
 
-    public ServiceJob(int serviceJobId, int vehicleId, String description, String status, double cost, LocalDate dateCreated) {
+    public ServiceJob(int serviceJobId, int vehicleId, String description, String status, double cost, String dateCreated) {
         setServiceJobId(serviceJobId);
         setVehicleId(vehicleId);
         setDescription(description);
@@ -23,7 +21,7 @@ public class ServiceJob {
         setDateCreated(dateCreated);
     }
 
-    public ServiceJob(int vehicleId, String description, String status, double cost, LocalDate dateCreated) {
+    public ServiceJob(int vehicleId, String description, String status, double cost, String dateCreated) {
         setVehicleId(vehicleId);
         setDescription(description);
         setStatus(status);
@@ -95,15 +93,15 @@ public class ServiceJob {
         this.cost = cost;
     }
 
-    public LocalDate getDateCreated() {
+    public String getDateCreated() {
         return dateCreated;
     }
 
-    public void setDateCreated(LocalDate dateCreated) {
-        if (dateCreated == null) {
-            throw new IllegalArgumentException("Date created cannot be null.");
+    public void setDateCreated(String dateCreated) {
+        if (dateCreated == null || dateCreated.trim().isEmpty()) {
+            throw new IllegalArgumentException("Date created cannot be empty.");
         }
-        this.dateCreated = dateCreated;
+        this.dateCreated = dateCreated.trim();
     }
 
     @Override
@@ -114,7 +112,7 @@ public class ServiceJob {
                 ", description='" + description + '\'' +
                 ", status='" + status + '\'' +
                 ", cost=" + cost +
-                ", dateCreated=" + dateCreated +
+                ", dateCreated='" + dateCreated + '\'' +
                 '}';
     }
 }

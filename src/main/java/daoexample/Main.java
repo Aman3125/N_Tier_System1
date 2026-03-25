@@ -10,7 +10,6 @@ import daoexample.domain.Customer;
 import daoexample.domain.ServiceJob;
 import daoexample.domain.Vehicle;
 
-import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -187,7 +186,7 @@ public class Main {
                     "Wheel alignment",
                     "PENDING",
                     75.00,
-                    LocalDate.now()
+                    "2026-03-19"
             );
 
             ServiceJob saved = dao.insert(newJob);
