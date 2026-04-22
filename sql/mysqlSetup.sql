@@ -1,6 +1,10 @@
 CREATE DATABASE IF NOT EXISTS car_garage_db;
 USE car_garage_db;
 
+DROP TABLE IF EXISTS service_job;
+DROP TABLE IF EXISTS vehicle;
+DROP TABLE IF EXISTS customer;
+
 CREATE TABLE IF NOT EXISTS customer (
                                         customer_id INT NOT NULL AUTO_INCREMENT,
                                         first_name VARCHAR(50) NOT NULL,
@@ -30,6 +34,13 @@ CREATE TABLE IF NOT EXISTS service_job (
     status ENUM('PENDING','IN_PROGRESS','COMPLETED') NOT NULL DEFAULT 'PENDING',
     cost DECIMAL(10,2) NOT NULL,
     date_created DATE NOT NULL,
+
+    -- F17 binary file fields
+    file_data BLOB,
+    file_name VARCHAR(255),
+    content_type VARCHAR(100),
+    file_size INT,
+
     PRIMARY KEY (service_job_id),
     CONSTRAINT fk_servicejob_vehicle
     FOREIGN KEY (vehicle_id) REFERENCES vehicle(vehicle_id)
@@ -51,10 +62,13 @@ INSERT INTO vehicle (customer_id, make, model, registration_number, year) VALUES
                                                                               (3, 'BMW', '320D', '171-G-99887', 2017),
                                                                               (4, 'Audi', 'A4', '202-D-44556', 2020);
 
-INSERT INTO service_job (vehicle_id, description, status, cost, date_created) VALUES
-                                                                                  (1, 'Oil change and filter replacement', 'COMPLETED', 89.99, '2026-01-10'),
-                                                                                  (2, 'Brake pad replacement', 'IN_PROGRESS', 220.00, '2026-01-12'),
-                                                                                  (3, 'Full service', 'PENDING', 300.00, '2026-01-15'),
-                                                                                  (4, 'Battery replacement', 'COMPLETED', 140.50, '2026-01-18'),
-                                                                                  (5, 'Engine diagnostic check', 'PENDING', 95.00, '2026-01-20'),
-                                                                                  (6, 'Tyre replacement', 'IN_PROGRESS', 400.00, '2026-01-22');
+INSERT INTO service_job (
+    vehicle_id, description, status, cost, date_created,
+    file_data, file_name, content_type, file_size
+) VALUES
+      (1, 'Oil change and filter replacement', 'COMPLETED', 89.99, '2026-01-10', NULL, NULL, NULL, NULL),
+      (2, 'Brake pad replacement', 'IN_PROGRESS', 220.00, '2026-01-12', NULL, NULL, NULL, NULL),
+      (3, 'Full service', 'PENDING', 300.00, '2026-01-15', NULL, NULL, NULL, NULL),
+      (4, 'Battery replacement', 'COMPLETED', 140.50, '2026-01-18', NULL, NULL, NULL, NULL),
+      (5, 'Engine diagnostic check', 'PENDING', 95.00, '2026-01-20', NULL, NULL, NULL, NULL),
+      (6, 'Tyre replacement', 'IN_PROGRESS', 400.00, '2026-01-22', NULL, NULL, NULL, NULL);
