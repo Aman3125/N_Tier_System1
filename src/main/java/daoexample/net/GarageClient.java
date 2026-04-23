@@ -51,6 +51,7 @@ public class GarageClient {
             System.out.println("13. Create Service Job");
             System.out.println("14. Update Service Job");
             System.out.println("15. Delete Service Job");
+            System.out.println("16. Upload File to Service Job");
             System.out.println("\n0. Exit");
             System.out.print("Choose option: ");
 
@@ -112,6 +113,9 @@ public class GarageClient {
                         break;
                     case "15":
                         deleteServiceJob(kb);
+                        break;
+                    case "16":
+                        uploadFileToServiceJob(kb);
                         break;
 
                     case "0":
@@ -634,5 +638,56 @@ public class GarageClient {
 
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
+    }
+
+    // ========== FILE UPLOAD METHOD (F18) ==========
+
+    private void uploadFileToServiceJob(Scanner kb) throws Exception {
+        System.out.println("\n--- Upload File to Service Job ---");
+
+        System.out.print("Service Job ID: ");
+        int serviceJobId = Integer.parseInt(kb.nextLine());
+
+        System.out.print("File Path: ");
+        String filePath = kb.nextLine();
+
+        System.out.print("Content Type (e.g. image/png, application/pdf): ");
+        String contentType = kb.nextLine();
+
+        String base64FileData = encodeFileToBase64(filePath);
+        String fileName = Path.of(filePath).getFileName().toString();
+        int fileSize = getFileSize(filePath);
+
+        ClientRequest request = new ClientRequest(
+                "SERVICEJOB",
+                "UPLOAD_FILE",
+                serviceJobId,
+                null,
+                base64FileData,
+                fileName,
+                contentType,
+                fileSize
+        );
+
+        String json = sendRequest(request);
+
+        if (json == null || json.isBlank()) {
+            System.out.println("Client error: No response received from server.");
+            return;
+        }
+
+        Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
+        ServerResponse<ServiceJob> response = gson.fromJson(json, type);
+
+        if (response == null) {
+            System.out.println("Client error: Server returned invalid JSON.");
+            return;
+        }
+
+        System.out.println("Status: " + response.getStatus());
+        System.out.println("Message: " + response.getMessage());
+        if (response.getData() != null) {
+            System.out.println("Updated Service Job: " + response.getData());
+        }
     }
 }
