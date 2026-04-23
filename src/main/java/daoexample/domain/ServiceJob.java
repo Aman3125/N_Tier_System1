@@ -1,7 +1,7 @@
 package daoexample.domain;
 
 // F1: DTO entity class representing a ServiceJob table record.
-// Fields are private and validated through setters to enforce valid data.
+// F17: Extended to include binary file data and metadata.
 public class ServiceJob {
 
     private int serviceJobId;
@@ -11,55 +11,70 @@ public class ServiceJob {
     private double cost;
     private String dateCreated;
 
+    // F17: Binary file fields
+    private byte[] fileData;
+    private String fileName;
+    private String contentType;
+    private int fileSize;
 
-    public ServiceJob(int serviceJobId, int vehicleId, String description, String status, double cost, String dateCreated) {
-        setServiceJobId(serviceJobId);
-        setVehicleId(vehicleId);
-        setDescription(description);
-        setStatus(status);
-        setCost(cost);
-        setDateCreated(dateCreated);
+    public ServiceJob() {
     }
 
-    public ServiceJob(int vehicleId, String description, String status, double cost, String dateCreated) {
-        setVehicleId(vehicleId);
-        setDescription(description);
-        setStatus(status);
-        setCost(cost);
-        setDateCreated(dateCreated);
-    }
+    // Full constructor
 
-    public int getServiceJobId() {
-        return serviceJobId;
-    }
 
-    public void setServiceJobId(int serviceJobId) {
-        if (serviceJobId < 0) {
-            throw new IllegalArgumentException("Service job ID cannot be negative.");
-        }
+    public ServiceJob(int serviceJobId, int vehicleId, String description,
+                      String status, double cost, String dateCreated,
+                      byte[] fileData, String fileName,
+                      String contentType, int fileSize) {
+
         this.serviceJobId = serviceJobId;
+        this.vehicleId = vehicleId;
+        this.description = description;
+        this.status = status;
+        this.cost = cost;
+        this.dateCreated = dateCreated;
+
+        // F17 fields
+        this.fileData = fileData;
+        this.fileName = fileName;
+        this.contentType = contentType;
+        this.fileSize = fileSize;
     }
+
+    // Constructor without ID (used for insert)
+    public ServiceJob(int vehicleId, String description,
+                      String status, double cost, String dateCreated,
+                      byte[] fileData, String fileName, String contentType, int fileSize)
+    {
+
+        setVehicleId(vehicleId);
+        setDescription(description);
+        setStatus(status);
+        setCost(cost);
+        setDateCreated(dateCreated);
+        setFileData(fileData);
+        setFileName(fileName);
+        setContentType(contentType);
+        setFileSize(fileSize);
+    }
+
+    // Existing constructor (no file data)
+    public ServiceJob(int serviceJobId, int vehicleId, String description,
+                      String status, double cost, String dateCreated) {
+
+        this(serviceJobId, vehicleId, description, status, cost, dateCreated,
+                null, null, null, 0);
+    }
+
+    // ------------------- Getters & Setters -------------------
 
     public int getVehicleId() {
         return vehicleId;
     }
 
     public void setVehicleId(int vehicleId) {
-        if (vehicleId <= 0) {
-            throw new IllegalArgumentException("Vehicle ID must be greater than 0.");
-        }
         this.vehicleId = vehicleId;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        if (description == null || description.trim().isEmpty()) {
-            throw new IllegalArgumentException("Description cannot be empty.");
-        }
-        this.description = description.trim();
     }
 
     public String getStatus() {
@@ -67,30 +82,23 @@ public class ServiceJob {
     }
 
     public void setStatus(String status) {
-        if (status == null || status.trim().isEmpty()) {
-            throw new IllegalArgumentException("Status cannot be empty.");
-        }
-
-        String cleanStatus = status.trim().toUpperCase();
-
-        if (!cleanStatus.equals("PENDING") &&
-                !cleanStatus.equals("IN_PROGRESS") &&
-                !cleanStatus.equals("COMPLETED")) {
-            throw new IllegalArgumentException("Status must be PENDING, IN_PROGRESS, or COMPLETED.");
-        }
-
-        this.status = cleanStatus;
+        this.status = status;
     }
 
-    public double getCost() {
-        return cost;
+    public int getServiceJobId() {
+        return serviceJobId;
     }
 
-    public void setCost(double cost) {
-        if (cost < 0) {
-            throw new IllegalArgumentException("Cost cannot be negative.");
-        }
-        this.cost = cost;
+    public void setServiceJobId(int serviceJobId) {
+        this.serviceJobId = serviceJobId;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getDateCreated() {
@@ -98,11 +106,62 @@ public class ServiceJob {
     }
 
     public void setDateCreated(String dateCreated) {
-        if (dateCreated == null || dateCreated.trim().isEmpty()) {
-            throw new IllegalArgumentException("Date created cannot be empty.");
-        }
-        this.dateCreated = dateCreated.trim();
+        this.dateCreated = dateCreated;
     }
+
+    public double getCost() {
+        return cost;
+    }
+
+    public void setCost(double cost) {
+        this.cost = cost;
+    }
+
+
+    // ------------------- F17 File Fields -------------------
+
+    public byte[] getFileData() {
+        return fileData;
+    }
+
+    public void setFileData(byte[] fileData) {
+        this.fileData = fileData; // can be null
+    }
+
+    public String getFileName() {
+        return fileName;
+    }
+
+    public void setFileName(String fileName) {
+        if (fileName != null && fileName.trim().isEmpty()) {
+            throw new IllegalArgumentException("File name cannot be empty.");
+        }
+        this.fileName = (fileName == null) ? null : fileName.trim();
+    }
+
+    public String getContentType() {
+        return contentType;
+    }
+
+    public void setContentType(String contentType) {
+        if (contentType != null && contentType.trim().isEmpty()) {
+            throw new IllegalArgumentException("Content type cannot be empty.");
+        }
+        this.contentType = (contentType == null) ? null : contentType.trim();
+    }
+
+    public int getFileSize() {
+        return fileSize;
+    }
+
+    public void setFileSize(int fileSize) {
+        if (fileSize < 0) {
+            throw new IllegalArgumentException("File size cannot be negative.");
+        }
+        this.fileSize = fileSize;
+    }
+
+    // ------------------- toString -------------------
 
     @Override
     public String toString() {
@@ -113,6 +172,9 @@ public class ServiceJob {
                 ", status='" + status + '\'' +
                 ", cost=" + cost +
                 ", dateCreated='" + dateCreated + '\'' +
+                ", fileName='" + fileName + '\'' +
+                ", contentType='" + contentType + '\'' +
+                ", fileSize=" + fileSize +
                 '}';
     }
 }
