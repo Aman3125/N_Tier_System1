@@ -27,7 +27,9 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             throw new IllegalArgumentException("Service job cannot be null.");
         }
 
-        String sql = "INSERT INTO service_job (vehicle_id, description, status, cost, date_created) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO service_job " +
+                "(vehicle_id, description, status, cost, date_created, file_data, file_name, content_type, file_size) " +
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         try (Connection c = DatabaseConnection.getConnection();
              PreparedStatement ps = c.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -37,6 +39,10 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             ps.setString(3, serviceJob.getStatus());
             ps.setDouble(4, serviceJob.getCost());
             ps.setString(5, serviceJob.getDateCreated());
+            ps.setBytes(6, serviceJob.getFileData());
+            ps.setString(7, serviceJob.getFileName());
+            ps.setString(8, serviceJob.getContentType());
+            ps.setInt(9, serviceJob.getFileSize());
 
             int rows = ps.executeUpdate();
 
@@ -57,7 +63,11 @@ public class JdbcServiceJobDao implements ServiceJobDao {
                         serviceJob.getDescription(),
                         serviceJob.getStatus(),
                         serviceJob.getCost(),
-                        serviceJob.getDateCreated()
+                        serviceJob.getDateCreated(),
+                        serviceJob.getFileData(),
+                        serviceJob.getFileName(),
+                        serviceJob.getContentType(),
+                        serviceJob.getFileSize()
                 );
             }
         }
@@ -71,7 +81,8 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             return Optional.empty();
         }
 
-        String sql = "SELECT service_job_id, vehicle_id, description, status, cost, date_created " +
+        String sql = "SELECT service_job_id, vehicle_id, description, status, cost, date_created, " +
+                "file_data, file_name, content_type, file_size " +
                 "FROM service_job WHERE service_job_id = ?";
 
         try (Connection c = DatabaseConnection.getConnection();
@@ -92,7 +103,8 @@ public class JdbcServiceJobDao implements ServiceJobDao {
     // F3: Retrieves all service job records and returns them as a List<ServiceJob>.
     @Override
     public List<ServiceJob> getAllServiceJobs() throws Exception {
-        String sql = "SELECT service_job_id, vehicle_id, description, status, cost, date_created " +
+        String sql = "SELECT service_job_id, vehicle_id, description, status, cost, date_created, " +
+                "file_data, file_name, content_type, file_size " +
                 "FROM service_job ORDER BY service_job_id";
 
         try (Connection c = DatabaseConnection.getConnection();
@@ -120,7 +132,8 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             throw new IllegalArgumentException("Service job cannot be null.");
         }
 
-        String sql = "UPDATE service_job SET vehicle_id = ?, description = ?, status = ?, cost = ?, date_created = ? " +
+        String sql = "UPDATE service_job SET vehicle_id = ?, description = ?, status = ?, cost = ?, date_created = ?, " +
+                "file_data = ?, file_name = ?, content_type = ?, file_size = ? " +
                 "WHERE service_job_id = ?";
 
         try (Connection c = DatabaseConnection.getConnection();
@@ -131,7 +144,11 @@ public class JdbcServiceJobDao implements ServiceJobDao {
             ps.setString(3, serviceJob.getStatus());
             ps.setDouble(4, serviceJob.getCost());
             ps.setString(5, serviceJob.getDateCreated());
-            ps.setInt(6, id);
+            ps.setBytes(6, serviceJob.getFileData());
+            ps.setString(7, serviceJob.getFileName());
+            ps.setString(8, serviceJob.getContentType());
+            ps.setInt(9, serviceJob.getFileSize());
+            ps.setInt(10, id);
 
             int rows = ps.executeUpdate();
 
@@ -145,7 +162,11 @@ public class JdbcServiceJobDao implements ServiceJobDao {
                     serviceJob.getDescription(),
                     serviceJob.getStatus(),
                     serviceJob.getCost(),
-                    serviceJob.getDateCreated()
+                    serviceJob.getDateCreated(),
+                    serviceJob.getFileData(),
+                    serviceJob.getFileName(),
+                    serviceJob.getContentType(),
+                    serviceJob.getFileSize()
             );
         }
     }
@@ -182,7 +203,10 @@ public class JdbcServiceJobDao implements ServiceJobDao {
                 + "\"description\":\"" + job.getDescription() + "\","
                 + "\"status\":\"" + job.getStatus() + "\","
                 + "\"cost\":" + job.getCost() + ","
-                + "\"dateCreated\":\"" + job.getDateCreated() + "\""
+                + "\"dateCreated\":\"" + job.getDateCreated() + "\","
+                + "\"fileName\":" + (job.getFileName() == null ? "null" : "\"" + job.getFileName() + "\"") + ","
+                + "\"contentType\":" + (job.getContentType() == null ? "null" : "\"" + job.getContentType() + "\"") + ","
+                + "\"fileSize\":" + job.getFileSize()
                 + "}";
     }
 
@@ -197,6 +221,9 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         String status = "";
         double cost = 0.0;
         String dateCreated = "";
+        String fileName = null;
+        String contentType = null;
+        int fileSize = 0;
 
         for (String pair : pairs) {
             String[] keyValue = pair.split(":", 2);
@@ -205,8 +232,15 @@ public class JdbcServiceJobDao implements ServiceJobDao {
                 continue;
             }
 
-            String key = keyValue[0].replace("\"", "");
-            String value = keyValue[1].replace("\"", "");
+            String key = keyValue[0].replace("\"", "").trim();
+            String value = keyValue[1].trim();
+
+            if (value.equals("null")) {
+                value = null;
+            }
+            else {
+                value = value.replace("\"", "");
+            }
 
             switch (key) {
                 case "serviceJobId":
@@ -227,10 +261,30 @@ public class JdbcServiceJobDao implements ServiceJobDao {
                 case "dateCreated":
                     dateCreated = value;
                     break;
+                case "fileName":
+                    fileName = value;
+                    break;
+                case "contentType":
+                    contentType = value;
+                    break;
+                case "fileSize":
+                    fileSize = Integer.parseInt(value);
+                    break;
             }
         }
 
-        return new ServiceJob(serviceJobId, vehicleId, description, status, cost, dateCreated);
+        return new ServiceJob(
+                serviceJobId,
+                vehicleId,
+                description,
+                status,
+                cost,
+                dateCreated,
+                null,
+                fileName,
+                contentType,
+                fileSize
+        );
     }
 
     @Override
@@ -255,7 +309,22 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         String status = rs.getString("status");
         double cost = rs.getDouble("cost");
         String dateCreated = rs.getString("date_created");
+        byte[] fileData = rs.getBytes("file_data");
+        String fileName = rs.getString("file_name");
+        String contentType = rs.getString("content_type");
+        int fileSize = rs.getInt("file_size");
 
-        return new ServiceJob(serviceJobId, vehicleId, description, status, cost, dateCreated);
+        return new ServiceJob(
+                serviceJobId,
+                vehicleId,
+                description,
+                status,
+                cost,
+                dateCreated,
+                fileData,
+                fileName,
+                contentType,
+                fileSize
+        );
     }
 }
