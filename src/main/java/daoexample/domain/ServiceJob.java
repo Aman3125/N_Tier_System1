@@ -59,6 +59,14 @@ public class ServiceJob {
         setFileSize(fileSize);
     }
 
+    // Constructor without ID and without file data
+    public ServiceJob(int vehicleId, String description,
+                      String status, double cost, String dateCreated) {
+
+        this(vehicleId, description, status, cost, dateCreated,
+                null, null, null, 0);
+    }
+
     // Existing constructor (no file data)
     public ServiceJob(int serviceJobId, int vehicleId, String description,
                       String status, double cost, String dateCreated) {
