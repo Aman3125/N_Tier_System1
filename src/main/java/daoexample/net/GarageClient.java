@@ -5,6 +5,9 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.lang.reflect.Type;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Base64;
 import java.util.List;
 import java.util.Scanner;
 
@@ -134,6 +137,17 @@ public class GarageClient {
         } catch (java.net.ConnectException e) {
             throw new Exception("Cannot connect to server. Make sure GarageServer is running first.");
         }
+    }
+
+    // F18: Reads a file from disk and converts it to Base64 for JSON upload.
+    private String encodeFileToBase64(String filePath) throws Exception {
+        byte[] fileBytes = Files.readAllBytes(Path.of(filePath));
+        return Base64.getEncoder().encodeToString(fileBytes);
+    }
+
+    // F18: Gets the size of a file in bytes before upload.
+    private int getFileSize(String filePath) throws Exception {
+        return (int) Files.size(Path.of(filePath));
     }
 
     // ========== READ METHODS ==========
