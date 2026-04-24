@@ -52,6 +52,7 @@ public class GarageClient {
             System.out.println("14. Update Service Job");
             System.out.println("15. Delete Service Job");
             System.out.println("16. Upload File to Service Job");
+            System.out.println("17. Download File from Service Job");
             System.out.println("\n0. Exit");
             System.out.print("Choose option: ");
 
@@ -116,6 +117,10 @@ public class GarageClient {
                         break;
                     case "16":
                         uploadFileToServiceJob(kb);
+                        break;
+
+                    case "17":
+                        downloadFileFromServiceJob(kb);
                         break;
 
                     case "0":
@@ -689,5 +694,52 @@ public class GarageClient {
         if (response.getData() != null) {
             System.out.println("Updated Service Job: " + response.getData());
         }
+    }
+
+    // ========== FILE DOWNLOAD METHOD (F19) ==========
+
+    private void downloadFileFromServiceJob(Scanner kb) throws Exception {
+        System.out.println("\n--- Download File from Service Job ---");
+
+        System.out.print("Service Job ID: ");
+        int serviceJobId = Integer.parseInt(kb.nextLine());
+
+        ClientRequest request = new ClientRequest("SERVICEJOB", "DOWNLOAD_FILE", serviceJobId);
+        String json = sendRequest(request);
+
+        if (json == null || json.isBlank()) {
+            System.out.println("Client error: No response received from server.");
+            return;
+        }
+
+        Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
+        ServerResponse<ServiceJob> response = gson.fromJson(json, type);
+
+        if (response == null) {
+            System.out.println("Client error: Server returned invalid JSON.");
+            return;
+        }
+
+        System.out.println("Status: " + response.getStatus());
+        System.out.println("Message: " + response.getMessage());
+
+        if (response.getData() == null) {
+            return;
+        }
+
+        ServiceJob job = response.getData();
+
+        if (job.getFileData() == null || job.getFileSize() <= 0) {
+            System.out.println("No file stored for this service job.");
+            return;
+        }
+
+        System.out.print("Enter folder path to save file: ");
+        String folderPath = kb.nextLine();
+
+        Path outputPath = Path.of(folderPath, job.getFileName());
+        Files.write(outputPath, job.getFileData());
+
+        System.out.println("File downloaded successfully to: " + outputPath);
     }
 }
