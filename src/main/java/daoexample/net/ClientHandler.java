@@ -256,6 +256,31 @@ public class ClientHandler implements Runnable {
                     return gson.toJson(ServerResponse.error("Failed to upload file: " + e.getMessage()));
                 }
 
+                // NEW: DOWNLOAD_FILE (F19)
+            case "DOWNLOAD_FILE":
+                if (request.getId() == null) {
+                    return gson.toJson(ServerResponse.error("Service job ID is required for file download"));
+                }
+
+                try {
+                    Optional<ServiceJob> existingJobOpt = serviceJobDao.getServiceJobById(request.getId());
+
+                    if (existingJobOpt.isEmpty()) {
+                        return gson.toJson(ServerResponse.error("Service job not found"));
+                    }
+
+                    ServiceJob existingJob = existingJobOpt.get();
+
+                    if (existingJob.getFileData() == null || existingJob.getFileSize() <= 0) {
+                        return gson.toJson(ServerResponse.error("No file stored for this service job"));
+                    }
+
+                    return gson.toJson(ServerResponse.success("File downloaded successfully", existingJob));
+
+                } catch (Exception e) {
+                    return gson.toJson(ServerResponse.error("Failed to download file: " + e.getMessage()));
+                }
+
                 // NEW: DELETE ServiceJob (F14)
             case "DELETE":
                 if (request.getId() == null) {
