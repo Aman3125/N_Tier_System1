@@ -8,34 +8,23 @@ import java.util.function.Predicate;
 
 public interface ServiceJobDao {
 
+    // Basic CRUD operations
     ServiceJob insert(ServiceJob serviceJob) throws Exception;
-
     Optional<ServiceJob> getServiceJobById(int id) throws Exception;
-
     List<ServiceJob> getAllServiceJobs() throws Exception;
-
     ServiceJob updateServiceJob(int id, ServiceJob serviceJob) throws Exception;
-
     boolean deleteServiceJobById(int id) throws Exception;
 
-
-    /**
-     * F8: Find service jobs matching a filter
-     */
+    // F8: Filter method
     List<ServiceJob> findServiceJobsByFilter(Predicate<ServiceJob> filter) throws Exception;
 
-    /**
-     * F9: Convert a single service job to JSON
-     */
+    // F9: JSON methods
     String serviceJobToJson(ServiceJob serviceJob) throws Exception;
-
-    /**
-     * F9: Convert JSON to a ServiceJob object
-     */
     ServiceJob serviceJobFromJson(String json) throws Exception;
-
-    /**
-     * F9: Convert a list of service jobs to JSON
-     */
     String serviceJobListToJson(List<ServiceJob> serviceJobs) throws Exception;
+
+    // ===== F20: FILE METADATA QUERY =====
+    // Gets file information (name, type, size) WITHOUT downloading the actual binary file
+    // This saves bandwidth and is faster than full download
+    ServiceJob getServiceJobMetadataById(int id) throws Exception;
 }

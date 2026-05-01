@@ -13,14 +13,12 @@ import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-// F2: JDBC implementation of ServiceJobDao using PreparedStatement for all SQL operations.
 public class JdbcServiceJobDao implements ServiceJobDao {
 
     public JdbcServiceJobDao() {
     }
 
-    // F6: Inserts a new service job record and returns the populated DTO
-    // including the auto-generated ID from getGeneratedKeys().
+    // F6: INSERT - creates new service job with auto-generated ID
     @Override
     public ServiceJob insert(ServiceJob serviceJob) throws Exception {
         if (serviceJob == null) {
@@ -73,8 +71,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
-    // F4: Retrieves a service job by ID and returns Optional<ServiceJob>.
-    // Returns Optional.empty() if no matching record exists.
+    // F4: GET BY ID - retrieves one service job including file data
     @Override
     public Optional<ServiceJob> getServiceJobById(int id) throws Exception {
         if (id <= 0) {
@@ -100,7 +97,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
-    // F3: Retrieves all service job records and returns them as a List<ServiceJob>.
+    // F3: GET ALL - retrieves all service jobs
     @Override
     public List<ServiceJob> getAllServiceJobs() throws Exception {
         String sql = "SELECT service_job_id, vehicle_id, description, status, cost, date_created, " +
@@ -121,7 +118,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
-    // F7: Updates an existing service job by ID and returns the updated ServiceJob DTO.
+    // F7: UPDATE - modifies existing service job
     @Override
     public ServiceJob updateServiceJob(int id, ServiceJob serviceJob) throws Exception {
         if (id <= 0) {
@@ -171,7 +168,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
-    // F5: Deletes a service job by ID and returns true if one row was removed.
+    // F5: DELETE - removes service job by ID
     @Override
     public boolean deleteServiceJobById(int id) throws Exception {
         if (id <= 0) {
@@ -188,6 +185,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         }
     }
 
+    // F8: FILTER - finds jobs matching a predicate
     @Override
     public List<ServiceJob> findServiceJobsByFilter(Predicate<ServiceJob> filter) throws Exception {
         return getAllServiceJobs().stream()
@@ -195,21 +193,29 @@ public class JdbcServiceJobDao implements ServiceJobDao {
                 .collect(Collectors.toList());
     }
 
+    // F9: JSON - converts single job to JSON string
     @Override
     public String serviceJobToJson(ServiceJob job) throws Exception {
         return "{"
                 + "\"serviceJobId\":" + job.getServiceJobId() + ","
                 + "\"vehicleId\":" + job.getVehicleId() + ","
-                + "\"description\":\"" + job.getDescription() + "\","
+                + "\"description\":\"" + escapeJson(job.getDescription()) + "\","
                 + "\"status\":\"" + job.getStatus() + "\","
                 + "\"cost\":" + job.getCost() + ","
                 + "\"dateCreated\":\"" + job.getDateCreated() + "\","
-                + "\"fileName\":" + (job.getFileName() == null ? "null" : "\"" + job.getFileName() + "\"") + ","
-                + "\"contentType\":" + (job.getContentType() == null ? "null" : "\"" + job.getContentType() + "\"") + ","
+                + "\"fileName\":" + (job.getFileName() == null ? "null" : "\"" + escapeJson(job.getFileName()) + "\"") + ","
+                + "\"contentType\":" + (job.getContentType() == null ? "null" : "\"" + escapeJson(job.getContentType()) + "\"") + ","
                 + "\"fileSize\":" + job.getFileSize()
                 + "}";
     }
 
+    // Helper method to escape JSON special characters
+    private String escapeJson(String s) {
+        if (s == null) return "";
+        return s.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n");
+    }
+
+    // F9: JSON - converts JSON string back to ServiceJob object
     @Override
     public ServiceJob serviceJobFromJson(String json) throws Exception {
         json = json.substring(1, json.length() - 1);
@@ -237,8 +243,7 @@ public class JdbcServiceJobDao implements ServiceJobDao {
 
             if (value.equals("null")) {
                 value = null;
-            }
-            else {
+            } else {
                 value = value.replace("\"", "");
             }
 
@@ -287,21 +292,63 @@ public class JdbcServiceJobDao implements ServiceJobDao {
         );
     }
 
+    // F9: JSON - converts list of jobs to JSON array
     @Override
     public String serviceJobListToJson(List<ServiceJob> jobs) throws Exception {
         StringBuilder json = new StringBuilder("[");
-
         for (int i = 0; i < jobs.size(); i++) {
             if (i > 0) {
                 json.append(",");
             }
             json.append(serviceJobToJson(jobs.get(i)));
         }
-
         json.append("]");
         return json.toString();
     }
 
+    // ===== F20: FILE METADATA QUERY =====
+    // Gets file metadata (name, type, size) WITHOUT fetching the binary BLOB data
+    // This is much faster and uses less memory than full download
+    @Override
+    public ServiceJob getServiceJobMetadataById(int id) throws Exception {
+        if (id <= 0) {
+            return null;
+        }
+
+        // IMPORTANT: This query does NOT include 'file_data' column (the BLOB)
+        // So no binary data is transferred from database
+        String sql = "SELECT service_job_id, vehicle_id, description, status, cost, date_created, " +
+                "file_name, content_type, file_size " +
+                "FROM service_job WHERE service_job_id = ?";
+
+        try (Connection c = DatabaseConnection.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+
+            ps.setInt(1, id);
+
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return null;
+                }
+
+                // Return job with fileData = null (metadata only, no binary content)
+                return new ServiceJob(
+                        rs.getInt("service_job_id"),
+                        rs.getInt("vehicle_id"),
+                        rs.getString("description"),
+                        rs.getString("status"),
+                        rs.getDouble("cost"),
+                        rs.getString("date_created"),
+                        null,  // IMPORTANT: fileData = null - we don't fetch the BLOB!
+                        rs.getString("file_name"),
+                        rs.getString("content_type"),
+                        rs.getInt("file_size")
+                );
+            }
+        }
+    }
+
+    // Helper method to map database row to ServiceJob object
     private ServiceJob mapRow(ResultSet rs) throws Exception {
         int serviceJobId = rs.getInt("service_job_id");
         int vehicleId = rs.getInt("vehicle_id");

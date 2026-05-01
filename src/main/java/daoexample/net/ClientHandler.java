@@ -19,8 +19,8 @@ import daoexample.domain.Customer;
 import daoexample.domain.ServiceJob;
 import daoexample.domain.Vehicle;
 
-// F10: Each connected client is handled on a separate thread.
-// F11: All replies are wrapped in ServerResponse<T> and sent as JSON.
+// F10: Each connected client is handled on a separate thread
+// F11: All replies are wrapped in ServerResponse<T> and sent as JSON
 public class ClientHandler implements Runnable {
 
     private final Socket clientSocket;
@@ -71,6 +71,13 @@ public class ClientHandler implements Runnable {
             return gson.toJson(ServerResponse.error("Invalid request"));
         }
 
+        // ===== F21: DISCONNECT / EXIT =====
+        // Client wants to close connection cleanly
+        if ("DISCONNECT".equalsIgnoreCase(request.getAction())) {
+            System.out.println("Client " + clientSocket.getRemoteSocketAddress() + " disconnected");
+            return gson.toJson(ServerResponse.success("Goodbye! Disconnected successfully.", null));
+        }
+
         if (request.getEntity() == null || request.getAction() == null) {
             return gson.toJson(ServerResponse.error("Request must contain entity and action"));
         }
@@ -78,13 +85,10 @@ public class ClientHandler implements Runnable {
         switch (request.getEntity().toUpperCase()) {
             case "CUSTOMER":
                 return handleCustomer(request);
-
             case "VEHICLE":
                 return handleVehicle(request);
-
             case "SERVICEJOB":
                 return handleServiceJob(request);
-
             default:
                 return gson.toJson(ServerResponse.error("Unknown entity"));
         }
@@ -96,7 +100,6 @@ public class ClientHandler implements Runnable {
                 if (request.getId() == null) {
                     return gson.toJson(ServerResponse.error("Customer ID is required"));
                 }
-
                 Optional<Customer> customer = customerDao.getCustomerById(request.getId());
                 if (customer.isPresent()) {
                     return gson.toJson(ServerResponse.success("Customer found", customer.get()));
@@ -107,7 +110,6 @@ public class ClientHandler implements Runnable {
                 List<Customer> customers = customerDao.getAllCustomers();
                 return gson.toJson(ServerResponse.success("Customers retrieved", customers));
 
-            // NEW: CREATE Customer (F13)
             case "CREATE":
                 if (request.getEntityData() == null) {
                     return gson.toJson(ServerResponse.error("Customer data is required"));
@@ -120,7 +122,6 @@ public class ClientHandler implements Runnable {
                     return gson.toJson(ServerResponse.error("Failed to create customer: " + e.getMessage()));
                 }
 
-                // NEW: UPDATE Customer (F15)
             case "UPDATE":
                 if (request.getId() == null) {
                     return gson.toJson(ServerResponse.error("Customer ID is required for update"));
@@ -136,7 +137,6 @@ public class ClientHandler implements Runnable {
                     return gson.toJson(ServerResponse.error("Failed to update customer: " + e.getMessage()));
                 }
 
-                // NEW: DELETE Customer (F14)
             case "DELETE":
                 if (request.getId() == null) {
                     return gson.toJson(ServerResponse.error("Customer ID is required for delete"));
@@ -159,8 +159,61 @@ public class ClientHandler implements Runnable {
 
     private String handleVehicle(ClientRequest request) throws Exception {
         switch (request.getAction().toUpperCase()) {
+            case "GET_BY_ID":
+                if (request.getId() == null) {
+                    return gson.toJson(ServerResponse.error("Vehicle ID is required"));
+                }
+                Optional<Vehicle> vehicle = vehicleDao.getVehicleById(request.getId());
+                if (vehicle.isPresent()) {
+                    return gson.toJson(ServerResponse.success("Vehicle found", vehicle.get()));
+                }
+                return gson.toJson(ServerResponse.error("Vehicle not found"));
 
-            // (UNCHANGED — your full vehicle logic remains exactly the same)
+            case "GET_ALL":
+                List<Vehicle> vehicles = vehicleDao.getAllVehicles();
+                return gson.toJson(ServerResponse.success("Vehicles retrieved", vehicles));
+
+            case "CREATE":
+                if (request.getEntityData() == null) {
+                    return gson.toJson(ServerResponse.error("Vehicle data is required"));
+                }
+                try {
+                    Vehicle newVehicle = gson.fromJson(request.getEntityData(), Vehicle.class);
+                    Vehicle saved = vehicleDao.insert(newVehicle);
+                    return gson.toJson(ServerResponse.success("Vehicle created successfully", saved));
+                } catch (Exception e) {
+                    return gson.toJson(ServerResponse.error("Failed to create vehicle: " + e.getMessage()));
+                }
+
+            case "UPDATE":
+                if (request.getId() == null) {
+                    return gson.toJson(ServerResponse.error("Vehicle ID is required for update"));
+                }
+                if (request.getEntityData() == null) {
+                    return gson.toJson(ServerResponse.error("Vehicle data is required"));
+                }
+                try {
+                    Vehicle updatedVehicle = gson.fromJson(request.getEntityData(), Vehicle.class);
+                    Vehicle updated = vehicleDao.updateVehicle(request.getId(), updatedVehicle);
+                    return gson.toJson(ServerResponse.success("Vehicle updated successfully", updated));
+                } catch (Exception e) {
+                    return gson.toJson(ServerResponse.error("Failed to update vehicle: " + e.getMessage()));
+                }
+
+            case "DELETE":
+                if (request.getId() == null) {
+                    return gson.toJson(ServerResponse.error("Vehicle ID is required for delete"));
+                }
+                try {
+                    boolean deleted = vehicleDao.deleteVehicleById(request.getId());
+                    if (deleted) {
+                        return gson.toJson(ServerResponse.success("Vehicle deleted successfully", null));
+                    } else {
+                        return gson.toJson(ServerResponse.error("Vehicle not found"));
+                    }
+                } catch (Exception e) {
+                    return gson.toJson(ServerResponse.error("Failed to delete vehicle: " + e.getMessage()));
+                }
 
             default:
                 return gson.toJson(ServerResponse.error("Unsupported action"));
@@ -169,12 +222,10 @@ public class ClientHandler implements Runnable {
 
     private String handleServiceJob(ClientRequest request) throws Exception {
         switch (request.getAction().toUpperCase()) {
-
             case "GET_BY_ID":
                 if (request.getId() == null) {
                     return gson.toJson(ServerResponse.error("Service job ID is required"));
                 }
-
                 Optional<ServiceJob> job = serviceJobDao.getServiceJobById(request.getId());
                 if (job.isPresent()) {
                     return gson.toJson(ServerResponse.success("Service job found", job.get()));
@@ -185,7 +236,6 @@ public class ClientHandler implements Runnable {
                 List<ServiceJob> jobs = serviceJobDao.getAllServiceJobs();
                 return gson.toJson(ServerResponse.success("Service jobs retrieved", jobs));
 
-            // NEW: CREATE ServiceJob (F13)
             case "CREATE":
                 if (request.getEntityData() == null) {
                     return gson.toJson(ServerResponse.error("Service job data is required"));
@@ -198,7 +248,6 @@ public class ClientHandler implements Runnable {
                     return gson.toJson(ServerResponse.error("Failed to create service job: " + e.getMessage()));
                 }
 
-                // NEW: UPDATE ServiceJob (F15)
             case "UPDATE":
                 if (request.getId() == null) {
                     return gson.toJson(ServerResponse.error("Service job ID is required for update"));
@@ -214,27 +263,20 @@ public class ClientHandler implements Runnable {
                     return gson.toJson(ServerResponse.error("Failed to update service job: " + e.getMessage()));
                 }
 
-                // NEW: UPLOAD_FILE (F18)
             case "UPLOAD_FILE":
                 if (request.getId() == null) {
                     return gson.toJson(ServerResponse.error("Service job ID is required for file upload"));
                 }
-
                 if (request.getBase64FileData() == null || request.getBase64FileData().isBlank()) {
                     return gson.toJson(ServerResponse.error("Base64 file data is required"));
                 }
-
                 try {
                     Optional<ServiceJob> existingJobOpt = serviceJobDao.getServiceJobById(request.getId());
-
                     if (existingJobOpt.isEmpty()) {
                         return gson.toJson(ServerResponse.error("Service job not found"));
                     }
-
                     ServiceJob existingJob = existingJobOpt.get();
-
                     byte[] decodedFileData = Base64.getDecoder().decode(request.getBase64FileData());
-
                     ServiceJob updatedJob = new ServiceJob(
                             existingJob.getServiceJobId(),
                             existingJob.getVehicleId(),
@@ -247,41 +289,30 @@ public class ClientHandler implements Runnable {
                             request.getContentType(),
                             request.getFileSize() == null ? decodedFileData.length : request.getFileSize()
                     );
-
                     ServiceJob savedJob = serviceJobDao.updateServiceJob(existingJob.getServiceJobId(), updatedJob);
-
                     return gson.toJson(ServerResponse.success("File uploaded successfully", savedJob));
-
                 } catch (Exception e) {
                     return gson.toJson(ServerResponse.error("Failed to upload file: " + e.getMessage()));
                 }
 
-                // NEW: DOWNLOAD_FILE (F19)
             case "DOWNLOAD_FILE":
                 if (request.getId() == null) {
                     return gson.toJson(ServerResponse.error("Service job ID is required for file download"));
                 }
-
                 try {
                     Optional<ServiceJob> existingJobOpt = serviceJobDao.getServiceJobById(request.getId());
-
                     if (existingJobOpt.isEmpty()) {
                         return gson.toJson(ServerResponse.error("Service job not found"));
                     }
-
                     ServiceJob existingJob = existingJobOpt.get();
-
                     if (existingJob.getFileData() == null || existingJob.getFileSize() <= 0) {
                         return gson.toJson(ServerResponse.error("No file stored for this service job"));
                     }
-
                     return gson.toJson(ServerResponse.success("File downloaded successfully", existingJob));
-
                 } catch (Exception e) {
                     return gson.toJson(ServerResponse.error("Failed to download file: " + e.getMessage()));
                 }
 
-                // NEW: DELETE ServiceJob (F14)
             case "DELETE":
                 if (request.getId() == null) {
                     return gson.toJson(ServerResponse.error("Service job ID is required for delete"));
@@ -295,6 +326,23 @@ public class ClientHandler implements Runnable {
                     }
                 } catch (Exception e) {
                     return gson.toJson(ServerResponse.error("Failed to delete service job: " + e.getMessage()));
+                }
+
+                // ===== F20: FILE METADATA QUERY =====
+                // Get file info without downloading the actual file
+            case "GET_METADATA":
+                if (request.getId() == null) {
+                    return gson.toJson(ServerResponse.error("Service job ID is required for metadata"));
+                }
+                try {
+                    ServiceJob metadata = serviceJobDao.getServiceJobMetadataById(request.getId());
+                    if (metadata != null) {
+                        return gson.toJson(ServerResponse.success("Metadata retrieved successfully", metadata));
+                    } else {
+                        return gson.toJson(ServerResponse.error("Service job not found"));
+                    }
+                } catch (Exception e) {
+                    return gson.toJson(ServerResponse.error("Failed to get metadata: " + e.getMessage()));
                 }
 
             default:

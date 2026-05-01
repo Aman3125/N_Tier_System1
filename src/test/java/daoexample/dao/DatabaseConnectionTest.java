@@ -1,14 +1,14 @@
-package daoexample.db;
+package daoexample.dao;
 
+import daoexample.db.DatabaseConnection;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-
-import static org.junit.jupiter.api.Assertions.*;
 
 class DatabaseConnectionTest {
 
@@ -31,7 +31,7 @@ class DatabaseConnectionTest {
             rs.next();
             int value = rs.getInt(1);
 
-            assertEquals(1, value);
+            Assertions.assertEquals(1, value);
         }
     }
 }

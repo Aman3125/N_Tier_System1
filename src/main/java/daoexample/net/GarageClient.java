@@ -17,7 +17,7 @@ import daoexample.domain.Customer;
 import daoexample.domain.ServiceJob;
 import daoexample.domain.Vehicle;
 
-// F12: Client sends JSON request, receives ServerResponse<T> JSON, parses and displays it.
+// F12: Client sends JSON request, receives ServerResponse<T> JSON, parses and displays it
 public class GarageClient {
 
     private static final String HOST = "localhost";
@@ -33,7 +33,7 @@ public class GarageClient {
         Scanner kb = new Scanner(System.in);
 
         while (true) {
-            System.out.println("\n=== Garage Client Menu ===");
+            System.out.println("\n=== GARAGE CLIENT MENU ===");
             System.out.println("=== READ OPERATIONS ===");
             System.out.println("1. Display Customer by ID");
             System.out.println("2. Display All Customers");
@@ -41,7 +41,7 @@ public class GarageClient {
             System.out.println("4. Display All Vehicles");
             System.out.println("5. Display ServiceJob by ID");
             System.out.println("6. Display All ServiceJobs");
-            System.out.println("\n=== WRITE OPERATIONS (F13-F15) ===");
+            System.out.println("\n=== WRITE OPERATIONS ===");
             System.out.println("7. Create Customer");
             System.out.println("8. Update Customer");
             System.out.println("9. Delete Customer");
@@ -53,6 +53,8 @@ public class GarageClient {
             System.out.println("15. Delete Service Job");
             System.out.println("16. Upload File to Service Job");
             System.out.println("17. Download File from Service Job");
+            System.out.println("\n=== F20: FILE METADATA ===");
+            System.out.println("18. Get File Metadata (file info only - no download)");
             System.out.println("\n0. Exit");
             System.out.print("Choose option: ");
 
@@ -60,70 +62,31 @@ public class GarageClient {
 
             try {
                 switch (option) {
-                    // READ Operations
-                    case "1":
-                        System.out.print("Enter customer ID: ");
-                        displayCustomerById(Integer.parseInt(kb.nextLine()));
-                        break;
-                    case "2":
-                        displayAllCustomers();
-                        break;
-                    case "3":
-                        System.out.print("Enter vehicle ID: ");
-                        displayVehicleById(Integer.parseInt(kb.nextLine()));
-                        break;
-                    case "4":
-                        displayAllVehicles();
-                        break;
-                    case "5":
-                        System.out.print("Enter service job ID: ");
-                        displayServiceJobById(Integer.parseInt(kb.nextLine()));
-                        break;
-                    case "6":
-                        displayAllServiceJobs();
-                        break;
-
-                    // CREATE Operations (F13)
-                    case "7":
-                        createCustomer(kb);
-                        break;
-                    case "10":
-                        createVehicle(kb);
-                        break;
-                    case "13":
-                        createServiceJob(kb);
-                        break;
-
-                    // UPDATE Operations (F15)
-                    case "8":
-                        updateCustomer(kb);
-                        break;
-                    case "11":
-                        updateVehicle(kb);
-                        break;
-                    case "14":
-                        updateServiceJob(kb);
-                        break;
-
-                    // DELETE Operations (F14)
-                    case "9":
-                        deleteCustomer(kb);
-                        break;
-                    case "12":
-                        deleteVehicle(kb);
-                        break;
-                    case "15":
-                        deleteServiceJob(kb);
-                        break;
-                    case "16":
-                        uploadFileToServiceJob(kb);
-                        break;
-
-                    case "17":
-                        downloadFileFromServiceJob(kb);
-                        break;
-
+                    case "1": System.out.print("Enter customer ID: ");
+                        displayCustomerById(Integer.parseInt(kb.nextLine())); break;
+                    case "2": displayAllCustomers(); break;
+                    case "3": System.out.print("Enter vehicle ID: ");
+                        displayVehicleById(Integer.parseInt(kb.nextLine())); break;
+                    case "4": displayAllVehicles(); break;
+                    case "5": System.out.print("Enter service job ID: ");
+                        displayServiceJobById(Integer.parseInt(kb.nextLine())); break;
+                    case "6": displayAllServiceJobs(); break;
+                    case "7": createCustomer(kb); break;
+                    case "8": updateCustomer(kb); break;
+                    case "9": deleteCustomer(kb); break;
+                    case "10": createVehicle(kb); break;
+                    case "11": updateVehicle(kb); break;
+                    case "12": deleteVehicle(kb); break;
+                    case "13": createServiceJob(kb); break;
+                    case "14": updateServiceJob(kb); break;
+                    case "15": deleteServiceJob(kb); break;
+                    case "16": uploadFileToServiceJob(kb); break;
+                    case "17": downloadFileFromServiceJob(kb); break;
+                    case "18": getFileMetadata(kb); break;
                     case "0":
+                        // ===== F21: DISCONNECT / EXIT =====
+                        // Send disconnect message before closing
+                        sendDisconnect();
                         System.out.println("Goodbye!");
                         return;
                     default:
@@ -135,6 +98,7 @@ public class GarageClient {
         }
     }
 
+    // Sends request to server and returns response
     private String sendRequest(ClientRequest request) throws Exception {
         try (
                 Socket socket = new Socket(HOST, PORT);
@@ -148,183 +112,137 @@ public class GarageClient {
         }
     }
 
-    // F18: Reads a file from disk and converts it to Base64 for JSON upload.
+    // ===== F21: Send disconnect message to server =====
+    private void sendDisconnect() {
+        try {
+            ClientRequest request = new ClientRequest("SYSTEM", "DISCONNECT", (Integer) null);
+            sendRequest(request);
+            System.out.println("Disconnected from server.");
+        } catch (Exception e) {
+            // Server might have closed connection, that's fine
+        }
+    }
+
+    // Encode file to Base64 for upload
     private String encodeFileToBase64(String filePath) throws Exception {
         byte[] fileBytes = Files.readAllBytes(Path.of(filePath));
         return Base64.getEncoder().encodeToString(fileBytes);
     }
 
-    // F18: Gets the size of a file in bytes before upload.
     private int getFileSize(String filePath) throws Exception {
         return (int) Files.size(Path.of(filePath));
     }
 
-    // ========== READ METHODS ==========
+    // ===== F20: Get file metadata without downloading =====
+    private void getFileMetadata(Scanner kb) throws Exception {
+        System.out.println("\n--- GET FILE METADATA ---");
+        System.out.print("Service Job ID: ");
+        int serviceJobId = Integer.parseInt(kb.nextLine());
 
-    private void displayCustomerById(int id) throws Exception {
-        ClientRequest request = new ClientRequest("CUSTOMER", "GET_BY_ID", (Integer) id);
+        ClientRequest request = new ClientRequest("SERVICEJOB", "GET_METADATA", serviceJobId);
         String json = sendRequest(request);
 
         if (json == null || json.isBlank()) {
-            System.out.println("Client error: No response received from server.");
-            return;
-        }
-
-        Type type = new TypeToken<ServerResponse<Customer>>() {}.getType();
-        ServerResponse<Customer> response = gson.fromJson(json, type);
-
-        if (response == null) {
-            System.out.println("Client error: Server returned invalid JSON.");
-            return;
-        }
-
-        System.out.println("Status: " + response.getStatus());
-        System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Data: " + response.getData());
-        }
-    }
-
-    private void displayAllCustomers() throws Exception {
-        // Cast null to Integer to resolve ambiguity
-        ClientRequest request = new ClientRequest("CUSTOMER", "GET_ALL", (Integer) null);
-        String json = sendRequest(request);
-
-        if (json == null || json.isBlank()) {
-            System.out.println("Client error: No response received from server.");
-            return;
-        }
-
-        Type type = new TypeToken<ServerResponse<List<Customer>>>() {}.getType();
-        ServerResponse<List<Customer>> response = gson.fromJson(json, type);
-
-        if (response == null) {
-            System.out.println("Client error: Server returned invalid JSON.");
-            return;
-        }
-
-        System.out.println("Status: " + response.getStatus());
-        System.out.println("Message: " + response.getMessage());
-
-        if (response.getData() != null && !response.getData().isEmpty()) {
-            for (Customer c : response.getData()) {
-                System.out.println(c);
-            }
-        } else {
-            System.out.println("No customers found.");
-        }
-    }
-
-    private void displayVehicleById(int id) throws Exception {
-        ClientRequest request = new ClientRequest("VEHICLE", "GET_BY_ID", (Integer) id);
-        String json = sendRequest(request);
-
-        if (json == null || json.isBlank()) {
-            System.out.println("Client error: No response received from server.");
-            return;
-        }
-
-        Type type = new TypeToken<ServerResponse<Vehicle>>() {}.getType();
-        ServerResponse<Vehicle> response = gson.fromJson(json, type);
-
-        if (response == null) {
-            System.out.println("Client error: Server returned invalid JSON.");
-            return;
-        }
-
-        System.out.println("Status: " + response.getStatus());
-        System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Data: " + response.getData());
-        }
-    }
-
-    private void displayAllVehicles() throws Exception {
-        // Cast null to Integer to resolve ambiguity
-        ClientRequest request = new ClientRequest("VEHICLE", "GET_ALL", (Integer) null);
-        String json = sendRequest(request);
-
-        if (json == null || json.isBlank()) {
-            System.out.println("Client error: No response received from server.");
-            return;
-        }
-
-        Type type = new TypeToken<ServerResponse<List<Vehicle>>>() {}.getType();
-        ServerResponse<List<Vehicle>> response = gson.fromJson(json, type);
-
-        if (response == null) {
-            System.out.println("Client error: Server returned invalid JSON.");
-            return;
-        }
-
-        System.out.println("Status: " + response.getStatus());
-        System.out.println("Message: " + response.getMessage());
-
-        if (response.getData() != null && !response.getData().isEmpty()) {
-            for (Vehicle v : response.getData()) {
-                System.out.println(v);
-            }
-        } else {
-            System.out.println("No vehicles found.");
-        }
-    }
-
-    private void displayServiceJobById(int id) throws Exception {
-        ClientRequest request = new ClientRequest("SERVICEJOB", "GET_BY_ID", (Integer) id);
-        String json = sendRequest(request);
-
-        if (json == null || json.isBlank()) {
-            System.out.println("Client error: No response received from server.");
+            System.out.println("No response from server.");
             return;
         }
 
         Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
         ServerResponse<ServiceJob> response = gson.fromJson(json, type);
 
-        if (response == null) {
-            System.out.println("Client error: Server returned invalid JSON.");
-            return;
-        }
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
+
+        if (response.getData() != null) {
+            ServiceJob metadata = response.getData();
+            System.out.println("\n=== FILE INFORMATION (No file downloaded) ===");
+            System.out.println("Service Job ID: " + metadata.getServiceJobId());
+            System.out.println("Vehicle ID: " + metadata.getVehicleId());
+            System.out.println("Description: " + metadata.getDescription());
+            System.out.println("Status: " + metadata.getStatus());
+            System.out.println("Cost: $" + metadata.getCost());
+            System.out.println("Date Created: " + metadata.getDateCreated());
+            System.out.println("File Name: " + metadata.getFileName());
+            System.out.println("File Type: " + metadata.getContentType());
+            System.out.println("File Size: " + metadata.getFileSize() + " bytes");
+            System.out.println("(Binary data was NOT downloaded - this is just metadata)");
+        }
+    }
+
+    // ========== READ METHODS ==========
+    private void displayCustomerById(int id) throws Exception {
+        ClientRequest request = new ClientRequest("CUSTOMER", "GET_BY_ID", id);
+        String json = sendRequest(request);
+        Type type = new TypeToken<ServerResponse<Customer>>() {}.getType();
+        ServerResponse<Customer> response = gson.fromJson(json, type);
+        System.out.println("Status: " + response.getStatus());
+        if (response.getData() != null) {
+            System.out.println("Data: " + response.getData());
+        }
+    }
+
+    private void displayAllCustomers() throws Exception {
+        ClientRequest request = new ClientRequest("CUSTOMER", "GET_ALL", (Integer) null);
+        String json = sendRequest(request);
+        Type type = new TypeToken<ServerResponse<List<Customer>>>() {}.getType();
+        ServerResponse<List<Customer>> response = gson.fromJson(json, type);
+        System.out.println("Status: " + response.getStatus());
+        if (response.getData() != null) {
+            for (Customer c : response.getData()) {
+                System.out.println(c);
+            }
+        }
+    }
+
+    private void displayVehicleById(int id) throws Exception {
+        ClientRequest request = new ClientRequest("VEHICLE", "GET_BY_ID", id);
+        String json = sendRequest(request);
+        Type type = new TypeToken<ServerResponse<Vehicle>>() {}.getType();
+        ServerResponse<Vehicle> response = gson.fromJson(json, type);
+        System.out.println("Status: " + response.getStatus());
+        if (response.getData() != null) {
+            System.out.println("Data: " + response.getData());
+        }
+    }
+
+    private void displayAllVehicles() throws Exception {
+        ClientRequest request = new ClientRequest("VEHICLE", "GET_ALL", (Integer) null);
+        String json = sendRequest(request);
+        Type type = new TypeToken<ServerResponse<List<Vehicle>>>() {}.getType();
+        ServerResponse<List<Vehicle>> response = gson.fromJson(json, type);
+        System.out.println("Status: " + response.getStatus());
+        if (response.getData() != null) {
+            for (Vehicle v : response.getData()) {
+                System.out.println(v);
+            }
+        }
+    }
+
+    private void displayServiceJobById(int id) throws Exception {
+        ClientRequest request = new ClientRequest("SERVICEJOB", "GET_BY_ID", id);
+        String json = sendRequest(request);
+        Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
+        ServerResponse<ServiceJob> response = gson.fromJson(json, type);
+        System.out.println("Status: " + response.getStatus());
         if (response.getData() != null) {
             System.out.println("Data: " + response.getData());
         }
     }
 
     private void displayAllServiceJobs() throws Exception {
-        // Cast null to Integer to resolve ambiguity
         ClientRequest request = new ClientRequest("SERVICEJOB", "GET_ALL", (Integer) null);
         String json = sendRequest(request);
-
-        if (json == null || json.isBlank()) {
-            System.out.println("Client error: No response received from server.");
-            return;
-        }
-
         Type type = new TypeToken<ServerResponse<List<ServiceJob>>>() {}.getType();
         ServerResponse<List<ServiceJob>> response = gson.fromJson(json, type);
-
-        if (response == null) {
-            System.out.println("Client error: Server returned invalid JSON.");
-            return;
-        }
-
         System.out.println("Status: " + response.getStatus());
-        System.out.println("Message: " + response.getMessage());
-
-        if (response.getData() != null && !response.getData().isEmpty()) {
+        if (response.getData() != null) {
             for (ServiceJob s : response.getData()) {
                 System.out.println(s);
             }
-        } else {
-            System.out.println("No service jobs found.");
         }
     }
 
-    // ========== CREATE METHODS (F13) ==========
-
+    // ========== CREATE METHODS ==========
     private void createCustomer(Scanner kb) throws Exception {
         System.out.println("\n--- Create New Customer ---");
         System.out.print("First Name: ");
@@ -340,18 +258,12 @@ public class GarageClient {
 
         Customer newCustomer = new Customer(firstName, lastName, phone, email, address);
         String customerJson = gson.toJson(newCustomer);
-
-        ClientRequest request = new ClientRequest("CUSTOMER", "CREATE", (String) customerJson);
+        ClientRequest request = new ClientRequest("CUSTOMER", "CREATE", customerJson);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<Customer>>() {}.getType();
         ServerResponse<Customer> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Created Customer: " + response.getData());
-        }
     }
 
     private void createVehicle(Scanner kb) throws Exception {
@@ -369,18 +281,12 @@ public class GarageClient {
 
         Vehicle newVehicle = new Vehicle(customerId, make, model, regNumber, year);
         String vehicleJson = gson.toJson(newVehicle);
-
-        ClientRequest request = new ClientRequest("VEHICLE", "CREATE", (String) vehicleJson);
+        ClientRequest request = new ClientRequest("VEHICLE", "CREATE", vehicleJson);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<Vehicle>>() {}.getType();
         ServerResponse<Vehicle> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Created Vehicle: " + response.getData());
-        }
     }
 
     private void createServiceJob(Scanner kb) throws Exception {
@@ -398,28 +304,19 @@ public class GarageClient {
 
         ServiceJob newJob = new ServiceJob(vehicleId, description, status, cost, dateCreated);
         String jobJson = gson.toJson(newJob);
-
-        ClientRequest request = new ClientRequest("SERVICEJOB", "CREATE", (String) jobJson);
+        ClientRequest request = new ClientRequest("SERVICEJOB", "CREATE", jobJson);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
         ServerResponse<ServiceJob> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Created Service Job: " + response.getData());
-        }
     }
 
-    // ========== UPDATE METHODS (F15) ==========
-
+    // ========== UPDATE METHODS ==========
     private void updateCustomer(Scanner kb) throws Exception {
         System.out.println("\n--- Update Customer ---");
         System.out.print("Customer ID to update: ");
         int id = Integer.parseInt(kb.nextLine());
-
-        System.out.println("Enter new details (leave blank to keep existing):");
         System.out.print("First Name: ");
         String firstName = kb.nextLine();
         System.out.print("Last Name: ");
@@ -431,51 +328,22 @@ public class GarageClient {
         System.out.print("Address: ");
         String address = kb.nextLine();
 
-        // First get existing customer to fill in blanks
-        ClientRequest getRequest = new ClientRequest("CUSTOMER", "GET_BY_ID", (Integer) id);
-        String getJson = sendRequest(getRequest);
-        Type getType = new TypeToken<ServerResponse<Customer>>() {}.getType();
-        ServerResponse<Customer> getResponse = gson.fromJson(getJson, getType);
-
-        if (getResponse.getData() == null) {
-            System.out.println("Customer not found!");
-            return;
-        }
-
-        Customer existing = getResponse.getData();
-
-        // Use existing values if new ones are blank
-        Customer updatedCustomer = new Customer(
-                id,
-                firstName.isBlank() ? existing.getFirstName() : firstName,
-                lastName.isBlank() ? existing.getLastName() : lastName,
-                phone.isBlank() ? existing.getPhoneNumber() : phone,
-                email.isBlank() ? existing.getEmail() : email,
-                address.isBlank() ? existing.getAddress() : address
-        );
-
+        Customer updatedCustomer = new Customer(id, firstName, lastName, phone, email, address);
         String customerJson = gson.toJson(updatedCustomer);
-        ClientRequest request = new ClientRequest("CUSTOMER", "UPDATE", (Integer) id, (String) customerJson);
+        ClientRequest request = new ClientRequest("CUSTOMER", "UPDATE", id, customerJson);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<Customer>>() {}.getType();
         ServerResponse<Customer> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Updated Customer: " + response.getData());
-        }
     }
 
     private void updateVehicle(Scanner kb) throws Exception {
         System.out.println("\n--- Update Vehicle ---");
         System.out.print("Vehicle ID to update: ");
         int id = Integer.parseInt(kb.nextLine());
-
-        System.out.println("Enter new details (leave blank to keep existing):");
         System.out.print("Customer ID: ");
-        String customerIdStr = kb.nextLine();
+        int customerId = Integer.parseInt(kb.nextLine());
         System.out.print("Make: ");
         String make = kb.nextLine();
         System.out.print("Model: ");
@@ -483,263 +351,130 @@ public class GarageClient {
         System.out.print("Registration Number: ");
         String regNumber = kb.nextLine();
         System.out.print("Year: ");
-        String yearStr = kb.nextLine();
+        int year = Integer.parseInt(kb.nextLine());
 
-        // First get existing vehicle
-        ClientRequest getRequest = new ClientRequest("VEHICLE", "GET_BY_ID", (Integer) id);
-        String getJson = sendRequest(getRequest);
-        Type getType = new TypeToken<ServerResponse<Vehicle>>() {}.getType();
-        ServerResponse<Vehicle> getResponse = gson.fromJson(getJson, getType);
-
-        if (getResponse.getData() == null) {
-            System.out.println("Vehicle not found!");
-            return;
-        }
-
-        Vehicle existing = getResponse.getData();
-
-        Vehicle updatedVehicle = new Vehicle(
-                id,
-                customerIdStr.isBlank() ? existing.getCustomerId() : Integer.parseInt(customerIdStr),
-                make.isBlank() ? existing.getMake() : make,
-                model.isBlank() ? existing.getModel() : model,
-                regNumber.isBlank() ? existing.getRegistrationNumber() : regNumber,
-                yearStr.isBlank() ? existing.getYear() : Integer.parseInt(yearStr)
-        );
-
+        Vehicle updatedVehicle = new Vehicle(id, customerId, make, model, regNumber, year);
         String vehicleJson = gson.toJson(updatedVehicle);
-        ClientRequest request = new ClientRequest("VEHICLE", "UPDATE", (Integer) id, (String) vehicleJson);
+        ClientRequest request = new ClientRequest("VEHICLE", "UPDATE", id, vehicleJson);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<Vehicle>>() {}.getType();
         ServerResponse<Vehicle> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Updated Vehicle: " + response.getData());
-        }
     }
 
     private void updateServiceJob(Scanner kb) throws Exception {
         System.out.println("\n--- Update Service Job ---");
         System.out.print("Service Job ID to update: ");
         int id = Integer.parseInt(kb.nextLine());
-
-        System.out.println("Enter new details (leave blank to keep existing):");
         System.out.print("Vehicle ID: ");
-        String vehicleIdStr = kb.nextLine();
+        int vehicleId = Integer.parseInt(kb.nextLine());
         System.out.print("Description: ");
         String description = kb.nextLine();
-        System.out.print("Status (PENDING/IN_PROGRESS/COMPLETED): ");
+        System.out.print("Status: ");
         String status = kb.nextLine();
         System.out.print("Cost: ");
-        String costStr = kb.nextLine();
-        System.out.print("Date Created (YYYY-MM-DD): ");
+        double cost = Double.parseDouble(kb.nextLine());
+        System.out.print("Date Created: ");
         String dateCreated = kb.nextLine();
 
-        // First get existing job
-        ClientRequest getRequest = new ClientRequest("SERVICEJOB", "GET_BY_ID", (Integer) id);
-        String getJson = sendRequest(getRequest);
-        Type getType = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
-        ServerResponse<ServiceJob> getResponse = gson.fromJson(getJson, getType);
-
-        if (getResponse.getData() == null) {
-            System.out.println("Service job not found!");
-            return;
-        }
-
-        ServiceJob existing = getResponse.getData();
-
-        ServiceJob updatedJob = new ServiceJob(
-                id,
-                vehicleIdStr.isBlank() ? existing.getVehicleId() : Integer.parseInt(vehicleIdStr),
-                description.isBlank() ? existing.getDescription() : description,
-                status.isBlank() ? existing.getStatus() : status,
-                costStr.isBlank() ? existing.getCost() : Double.parseDouble(costStr),
-                dateCreated.isBlank() ? existing.getDateCreated() : dateCreated
-        );
-
+        ServiceJob updatedJob = new ServiceJob(id, vehicleId, description, status, cost, dateCreated);
         String jobJson = gson.toJson(updatedJob);
-        ClientRequest request = new ClientRequest("SERVICEJOB", "UPDATE", (Integer) id, (String) jobJson);
+        ClientRequest request = new ClientRequest("SERVICEJOB", "UPDATE", id, jobJson);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
         ServerResponse<ServiceJob> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Updated Service Job: " + response.getData());
-        }
     }
 
-    // ========== DELETE METHODS (F14) ==========
-
+    // ========== DELETE METHODS ==========
     private void deleteCustomer(Scanner kb) throws Exception {
-        System.out.println("\n--- Delete Customer ---");
         System.out.print("Customer ID to delete: ");
         int id = Integer.parseInt(kb.nextLine());
-
         System.out.print("Are you sure? (y/n): ");
         String confirm = kb.nextLine();
+        if (!confirm.equalsIgnoreCase("y")) return;
 
-        if (!confirm.equalsIgnoreCase("y")) {
-            System.out.println("Delete cancelled.");
-            return;
-        }
-
-        ClientRequest request = new ClientRequest("CUSTOMER", "DELETE", (Integer) id);
+        ClientRequest request = new ClientRequest("CUSTOMER", "DELETE", id);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<Void>>() {}.getType();
         ServerResponse<Void> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
     }
 
     private void deleteVehicle(Scanner kb) throws Exception {
-        System.out.println("\n--- Delete Vehicle ---");
         System.out.print("Vehicle ID to delete: ");
         int id = Integer.parseInt(kb.nextLine());
-
         System.out.print("Are you sure? (y/n): ");
         String confirm = kb.nextLine();
+        if (!confirm.equalsIgnoreCase("y")) return;
 
-        if (!confirm.equalsIgnoreCase("y")) {
-            System.out.println("Delete cancelled.");
-            return;
-        }
-
-        ClientRequest request = new ClientRequest("VEHICLE", "DELETE", (Integer) id);
+        ClientRequest request = new ClientRequest("VEHICLE", "DELETE", id);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<Void>>() {}.getType();
         ServerResponse<Void> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
     }
 
     private void deleteServiceJob(Scanner kb) throws Exception {
-        System.out.println("\n--- Delete Service Job ---");
         System.out.print("Service Job ID to delete: ");
         int id = Integer.parseInt(kb.nextLine());
-
         System.out.print("Are you sure? (y/n): ");
         String confirm = kb.nextLine();
+        if (!confirm.equalsIgnoreCase("y")) return;
 
-        if (!confirm.equalsIgnoreCase("y")) {
-            System.out.println("Delete cancelled.");
-            return;
-        }
-
-        ClientRequest request = new ClientRequest("SERVICEJOB", "DELETE", (Integer) id);
+        ClientRequest request = new ClientRequest("SERVICEJOB", "DELETE", id);
         String json = sendRequest(request);
-
         Type type = new TypeToken<ServerResponse<Void>>() {}.getType();
         ServerResponse<Void> response = gson.fromJson(json, type);
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
     }
 
-    // ========== FILE UPLOAD METHOD (F18) ==========
-
+    // ========== FILE UPLOAD/DOWNLOAD ==========
     private void uploadFileToServiceJob(Scanner kb) throws Exception {
         System.out.println("\n--- Upload File to Service Job ---");
-
         System.out.print("Service Job ID: ");
         int serviceJobId = Integer.parseInt(kb.nextLine());
-
         System.out.print("File Path: ");
         String filePath = kb.nextLine();
-
-        System.out.print("Content Type (e.g. image/png, application/pdf): ");
+        System.out.print("Content Type (e.g., image/png): ");
         String contentType = kb.nextLine();
 
         String base64FileData = encodeFileToBase64(filePath);
         String fileName = Path.of(filePath).getFileName().toString();
         int fileSize = getFileSize(filePath);
 
-        ClientRequest request = new ClientRequest(
-                "SERVICEJOB",
-                "UPLOAD_FILE",
-                serviceJobId,
-                null,
-                base64FileData,
-                fileName,
-                contentType,
-                fileSize
-        );
-
+        ClientRequest request = new ClientRequest("SERVICEJOB", "UPLOAD_FILE", serviceJobId, null,
+                base64FileData, fileName, contentType, fileSize);
         String json = sendRequest(request);
-
-        if (json == null || json.isBlank()) {
-            System.out.println("Client error: No response received from server.");
-            return;
-        }
-
         Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
         ServerResponse<ServiceJob> response = gson.fromJson(json, type);
-
-        if (response == null) {
-            System.out.println("Client error: Server returned invalid JSON.");
-            return;
-        }
-
         System.out.println("Status: " + response.getStatus());
         System.out.println("Message: " + response.getMessage());
-        if (response.getData() != null) {
-            System.out.println("Updated Service Job: " + response.getData());
-        }
     }
-
-    // ========== FILE DOWNLOAD METHOD (F19) ==========
 
     private void downloadFileFromServiceJob(Scanner kb) throws Exception {
         System.out.println("\n--- Download File from Service Job ---");
-
         System.out.print("Service Job ID: ");
         int serviceJobId = Integer.parseInt(kb.nextLine());
 
         ClientRequest request = new ClientRequest("SERVICEJOB", "DOWNLOAD_FILE", serviceJobId);
         String json = sendRequest(request);
-
-        if (json == null || json.isBlank()) {
-            System.out.println("Client error: No response received from server.");
-            return;
-        }
-
         Type type = new TypeToken<ServerResponse<ServiceJob>>() {}.getType();
         ServerResponse<ServiceJob> response = gson.fromJson(json, type);
 
-        if (response == null) {
-            System.out.println("Client error: Server returned invalid JSON.");
-            return;
-        }
-
         System.out.println("Status: " + response.getStatus());
-        System.out.println("Message: " + response.getMessage());
-
-        if (response.getData() == null) {
-            return;
+        if (response.getData() != null && response.getData().getFileData() != null) {
+            ServiceJob job = response.getData();
+            System.out.print("Enter folder path to save file: ");
+            String folderPath = kb.nextLine();
+            Path outputPath = Path.of(folderPath, job.getFileName());
+            Files.write(outputPath, job.getFileData());
+            System.out.println("File saved to: " + outputPath);
         }
-
-        ServiceJob job = response.getData();
-
-        if (job.getFileData() == null || job.getFileSize() <= 0) {
-            System.out.println("No file stored for this service job.");
-            return;
-        }
-
-        System.out.print("Enter folder path to save file: ");
-        String folderPath = kb.nextLine();
-
-        Path outputPath = Path.of(folderPath, job.getFileName());
-        Files.write(outputPath, job.getFileData());
-
-        System.out.println("File downloaded successfully to: " + outputPath);
     }
 }
