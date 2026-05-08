@@ -24,12 +24,15 @@ The project also supports binary file upload and download features. This allows 
   - Student B — `Abdirahman Farah`
 
 ### Key features
-- JDBC DAO layer with full CRUD (Stage 1 foundation)
-- Client–server (sockets) JSON protocol + `ServerResponse<T>` wrapper
-- Multithreaded server using `ExecutorService`
-- Binary file upload + retrieval stored as DB BLOB with metadata
-- JUnit 5 test suite with ≥70% line coverage evidence at final stage
-
+- JDBC DAO layer with full CRUD functionality for Customers, Vehicles, and Service Jobs (Stage 1 foundation)
+- Client–server architecture using Java sockets with JSON communication and ServerResponse<T> wrapper responses
+- Multithreaded server implementation using ExecutorService to handle multiple clients simultaneously
+- Binary file upload and download functionality with files stored as BLOB data in the database along with metadata
+- JUnit 5 test suite with line coverage analysis and evidence of achieving at least 70% coverage in the final stage
+- MySQL relational database integration using JDBC and PreparedStatement for secure SQL operations
+- Layered N-Tier architecture separating domain, DAO, networking, and database logic
+- Menu-driven console client for interacting with the system
+- Validation and error handling for database operations and client-server communication
 ---
 
 ## 2. How to Run
