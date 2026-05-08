@@ -322,14 +322,52 @@ The application uses:
 ## 6. Testing & Coverage
 
 ### 6.1 Running tests
-- Command:
-  - `mvn test` (or your equivalent)
-- Location:
-  - `src/test/java/...`
+
+The project includes a JUnit 5 test suite located in:
+
+```text
+src/test/java/daoexample/dao/
+```
+
+The test files include:
+
+- `CustomerDaoTest.java`
+- `VehicleDaoTest.java`
+- `ServiceJobDaoTest.java`
+- `DatabaseConnectionTest.java`
+
+To run all tests, use:
+
+```bash
+mvn test
+```
+
+The tests cover the main DAO operations, including:
+
+- retrieving records by ID
+- retrieving all records
+- inserting new records with generated IDs
+- updating existing records
+- deleting records
+- JSON conversion tests
+- filtering using `Predicate<T>`
+- database connection testing
+- binary file upload and retrieval testing for `ServiceJob`
+
+The `CustomerDaoTest` checks customer CRUD operations, JSON round-trip conversion, filtering, and boundary cases for invalid IDs.
+
+The `VehicleDaoTest` checks vehicle CRUD operations, JSON conversion, filtering, and invalid ID handling.
+
+The `ServiceJobDaoTest` checks service job CRUD operations, JSON conversion, filtering, binary file storage/retrieval, metadata-only retrieval, and invalid ID handling.
+
+The `DatabaseConnectionTest` verifies that a database connection can be opened and a simple `SELECT 1` query can run successfully.
+
 
 ### 6.2 Coverage evidence (Stage 4)
 - Coverage screenshot committed to:
-  - `/reports/coverage.png`
+
+  <img width="1920" height="1080" alt="Screenshot 2026-05-08 155122" src="https://github.com/user-attachments/assets/fcd1d847-edf8-49ec-9ffd-c73da6b378ed" />
+
 - Target:
   - **≥ 70% line coverage** across DAO + JSON + binary handling classes
 
@@ -337,17 +375,70 @@ The application uses:
 
 ## 7. Design Patterns, Generics, Lambdas
 
-### 7.1 Patterns used (minimum 2)
-- Pattern 1: `<name>` — why it fits
-- Pattern 2: `<name>` — why it fits
+### 7.1 Patterns used
+
+- **DAO Pattern**  
+  The project uses the DAO (Data Access Object) pattern to separate database logic from business logic.  
+  Classes such as `JdbcCustomerDao`, `JdbcVehicleDao`, and `JdbcServiceJobDao` handle all database operations independently from the networking layer.
+
+- **DTO Pattern**  
+  DTOs (Data Transfer Objects) are used to transfer structured data between the client, server, and database layers.  
+  Classes such as `Customer`, `Vehicle`, and `ServiceJob` are used as DTOs throughout the application.
+
+- **Client–Server Pattern**  
+  The application follows a client–server architecture where the client sends JSON requests and the server processes them and returns JSON responses.
+
+- **Thread Pool Pattern**  
+  The multithreaded server uses `ExecutorService` to manage client connections efficiently without blocking the server.
+
+---
 
 ### 7.2 Generics usage
-- `ServerResponse<T>`
-- Any additional generic abstractions
+
+The project uses Java generics to improve code reuse and type safety.
+
+Examples include:
+
+- `ServerResponse<T>`  
+  Used to wrap all server responses while supporting different DTO types.
+
+- `List<Customer>`
+- `List<Vehicle>`
+- `List<ServiceJob>`
+
+- `Optional<Customer>`
+- `Optional<Vehicle>`
+- `Optional<ServiceJob>`
+
+These generic collections and wrappers reduce duplicate code and improve readability.
+
+---
 
 ### 7.3 Functional interfaces / lambdas
-- `Predicate<T>` filtering
-- Any other meaningful lambdas
+
+The project uses Java functional interfaces and lambda expressions for filtering operations.
+
+Example:
+
+```java
+Predicate<ServiceJob> filter
+```
+
+Used in:
+
+```java
+findServiceJobsByFilter(Predicate<ServiceJob> filter)
+```
+
+The filtering is implemented using Java Streams:
+
+```java
+return getAllServiceJobs().stream()
+        .filter(filter)
+        .collect(Collectors.toList());
+```
+
+This allows flexible filtering logic without creating multiple separate methods.
 
 ---
 
@@ -366,33 +457,33 @@ The application uses:
 | Major task | Primary author | Contributor / reviewer | Notes |
 | :- | :- | :- | :- |
 | Domain proposal email (150–200 words) + entity list for approval | Student A | Student B | Drafted + refined before sending |
-| Repo setup (private repo, collaborators, branch plan stage1–stage4) | Student B | Student C | Created branches + README skeleton |
-| `mysqlSetup.sql` schema + seed data (10+ rows per table) | Student C | Student A | Re-runnable from scratch |
-| DTO/entity modelling + validation rules (trim/blank/range checks) | Student A | Student C | Included int/double/string fields |
-| DAO interfaces (XxxDao) for all entities | Student B | Student A | Service depends on interfaces only |
-| JDBC DAO implementation: `getAll` + `getById` using `Optional<T>` | Student B | Student C | PreparedStatements throughout |
-| JDBC DAO implementation: `insert` returning generated keys | Student C | Student B | Verified `getGeneratedKeys()` |
+| Repo setup (private repo, collaborators, branch plan stage1–stage4) | Student A | Student B | Created branches + README skeleton |
+| `mysqlSetup.sql` schema + seed data (10+ rows per table) | Student A | Student B | Re-runnable from scratch |
+| DTO/entity modelling + validation rules (trim/blank/range checks) | Student A | Student B | Included int/double/string fields |
+| DAO interfaces (XxxDao) for all entities | Student A | Student B | Service depends on interfaces only |
+| JDBC DAO implementation: `getAll` + `getById` using `Optional<T>` | Student A | Student B | PreparedStatements throughout |
+| JDBC DAO implementation: `insert` returning generated keys | Student B | Student A | Verified `getGeneratedKeys()` |
 | JDBC DAO implementation: `update` + `deleteById` | Student B | Student A | Consistent return semantics |
-| Predicate filtering API (`findByFilter(Predicate<T>)`) | Student A | Student B | Lambda-based filtering |
-| JSON conversion (toJson/fromJson/listToJson) per entity | Student A | Student C | Round-trip verified |
-| Architecture diagram (Mermaid) + annotated tier explanation | Student C | Student B | Updated as architecture evolved |
-| Multithreaded server (`ExecutorService`, client handler per connection) | Student B | Student C | Clean shutdown + logging |
-| `ServerResponse<T>` wrapper + consistent response mapping | Student B | Student A | No raw types |
+| Predicate filtering API (`findByFilter(Predicate<T>)`) | Student B | Student A | Lambda-based filtering |
+| JSON conversion (toJson/fromJson/listToJson) per entity | Student B | Student A | Round-trip verified |
+| Architecture diagram (Mermaid) + annotated tier explanation | Student A | Student B | Updated as architecture evolved |
+| Multithreaded server (`ExecutorService`, client handler per connection) | Student A | Student B | Clean shutdown + logging |
+| `ServerResponse<T>` wrapper + consistent response mapping | Student A | Student B | No raw types |
 | Protocol documentation in README (all request types + payloads) | Student A | Student B | Kept current per stage |
-| Client features: display all + display by id | Student C | Student A | Implemented for owned entity |
-| Client features: insert/update/delete over sockets | Student C | Student B | Handles failures gracefully |
+| Client features: display all + display by id | Student A | Student B | Implemented for owned entity |
+| Client features: insert/update/delete over sockets | Student B | Student A | Handles failures gracefully |
 | Error handling: structured failures (no stack traces to client) | Student B | Student A | Includes validation + DB errors |
-| Binary schema extension (BLOB + metadata columns) | Student A | Student C | Updated `mysqlSetup.sql` |
+| Binary schema extension (BLOB + metadata columns) | Student A | Student B | Updated `mysqlSetup.sql` |
 | Binary upload (Base64 encode/decode + DB storage) | Student A | Student B | Stored bytes + metadata |
-| Binary retrieval (reconstruct file on client) | Student A | Student C | Verified bytes match |
+| Binary retrieval (reconstruct file on client) | Student A | Student B | Verified bytes match |
 | Metadata-only query (no BLOB fetch) | Student B | Student A | Separate DAO method |
-| Disconnect protocol (`DISCONNECT`) + cleanup | Student C | Student B | Releases thread cleanly |
-| Stage 3 core tests (DAO read, insert+id, JSON round-trip) | Student C | Student A | 3+ tests each |
-| Stage 4 extended tests (server scenario + binary scenario + full DAO) | Student B | Student C | Added 3+ more each |
+| Disconnect protocol (`DISCONNECT`) + cleanup | Student B | Student A | Releases thread cleanly |
+| Stage 3 core tests (DAO read, insert+id, JSON round-trip) | Student B | Student A | 3+ tests each |
+| Stage 4 extended tests (server scenario + binary scenario + full DAO) | Student B | Student A | Added 3+ more each |
 | Coverage evidence screenshot `/reports/coverage.png` | Student A | Student B | IntelliJ coverage runner |
-| Screencast (8–10 min): demo + design iterations | Student C | Student A | Script + recording + export |
+| Screencast (8–10 min): demo + design iterations | Student A | Student B | Script + recording + export |
 | Harvard references + AI usage declaration | Student A | Student B | All sources cited |
-| Final README polish (run steps, protocol, testing, evidence links) | Student B | Student C | Consistent formatting |
+| Final README polish (run steps, protocol, testing, evidence links) | Student A | Student B | Consistent formatting |
 ---
 
 ## 10. References (Harvard)
