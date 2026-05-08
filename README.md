@@ -306,7 +306,7 @@ The application uses:
 
 ### 5.5 Example Upload Request
 
-```json
+``json
 {
   "entity": "SERVICEJOB",
   "action": "UPLOAD_FILE",
