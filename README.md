@@ -444,7 +444,10 @@ This allows flexible filtering logic without creating multiple separate methods.
 
 ## 8. Screencast (Stage 4)
 
-- URL: [YouTube link](www.youtube.com)
+- Part 1 =
+- Part 2 = https://github.com/user-attachments/assets/cc969226-5410-4bf0-bcfd-02468d6b1181
+
+
 
 ---
 
@@ -488,7 +491,7 @@ This allows flexible filtering logic without creating multiple separate methods.
 
 ## 10. References (Harvard)
 
-- [1] …
+- [1] … https://github.com/nmcguinness/L8---OOP---Module-Content/tree/main/notes
 - [2] …
 
 ---
