@@ -247,19 +247,75 @@ Possible errors include:
 ### 5.1 What binary data represents in our domain
 - Example: Player profile image / Evidence photo / Receipt scan / Audio clip
 
+The system stores files related to garage service jobs.  
+These files can represent:
+
+- Vehicle repair receipts
+- Service invoices
+- Diagnostic reports
+- Images of vehicle damage
+- PDF documents related to repairs
+
+Each uploaded file is linked to a specific `ServiceJob` record in the database.
+
+---
+
 ### 5.2 Storage approach
-- DB table includes:
-  - `blob_data` (BLOB)
-  - `file_name` (VARCHAR)
-  - `content_type` (VARCHAR)
-  - `file_size` (INT)
+
+Binary files are stored directly in the MySQL database using a BLOB column.
+
+The `service_job` table includes the following file-related fields:
+
+| Column Name | Type | Purpose |
+|---|---|---|
+| `file_data` | BLOB | Stores the binary file bytes |
+| `file_name` | VARCHAR | Original uploaded file name |
+| `content_type` | VARCHAR | MIME type of the file |
+| `file_size` | INT | Size of the file in bytes |
+
+The application uses:
+
+- `PreparedStatement.setBytes()` to store binary data
+- Base64 encoding for transferring files over JSON
+- Base64 decoding on the server before database storage
+
+---
 
 ### 5.3 Supported binary operations
-| Operation | Request type | Notes |
-| :- | :- | :- |
-| Upload file | `UPLOAD_<ENTITY>_FILE` | Base64 encode bytes + include metadata |
-| Retrieve file | `GET_<ENTITY>_FILE` | Base64 returned, client reconstructs file |
-| Query metadata only | `GET_<ENTITY>_FILE_METADATA` | Must not fetch the BLOB payload |
+
+| Operation | Request Type | Notes |
+|---|---|---|
+| Upload file | `UPLOAD_FILE` | Client encodes file to Base64 before sending |
+| Store file | `UPDATE ServiceJob` | Server decodes Base64 and stores BLOB |
+| Retrieve metadata | `GET_BY_ID` | File metadata returned with ServiceJob |
+| Retrieve file data | `GET_BY_ID` | Binary data included in ServiceJob object |
+
+---
+
+### 5.4 Binary Upload Process (F18/F19)
+
+1. User selects a local file path in the client application
+2. Client reads the file from disk
+3. File is converted into Base64 format
+4. JSON request is sent to the server
+5. Server decodes the Base64 data into bytes
+6. File bytes are stored in MySQL using JDBC
+7. Server returns a `ServerResponse<T>` confirming success
+
+---
+
+### 5.5 Example Upload Request
+
+```json
+{
+  "entity": "SERVICEJOB",
+  "action": "UPLOAD_FILE",
+  "id": 2,
+  "base64FileData": "JVBERi0xLjQKJcfs...",
+  "fileName": "repair_receipt.pdf",
+  "contentType": "application/pdf",
+  "fileSize": 20480
+}
 
 ---
 
