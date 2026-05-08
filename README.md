@@ -138,29 +138,107 @@ Client ← JSON Response ← Server ← DAO ← MySQL Database
 ---
 
 ## 4. JSON Protocol Documentation
+The system uses a JSON-based protocol between the client and server over TCP sockets.
+Each request is sent from the client as a JSON object, and the server responds using a ServerResponse<T> wrapper.
 
 > **Keep this section up to date** as you add request types. Stage 2 requires the protocol to be documented in the README.
 
 ### 4.1 Envelope format (example)
 - **Request**
-  - `type`: string (e.g., `GET_ALL_PLAYERS`)
-  - `payload`: JSON object (optional)
+{
+  "entity": "SERVICEJOB",
+  "action": "GET_BY_ID",
+  "id": 1,
+  "entityData": null
+}
 - **Response**
-  - `status`: `SUCCESS` | `FAILURE`
-  - `message`: string
-  - `data`: object/array/null
+{
+  "status": "SUCCESS",
+  "message": "Service job found",
+  "data": {
+    "serviceJobId": 1,
+    "vehicleId": 2,
+    "description": "Brake replacement"
+  }
+}
 
 ### 4.2 Supported request types
-| Request Type | Payload fields | Success response data | Failure examples |
-| :- | :- | :- | :- |
-| `GET_ALL_<ENTITY>` | — | List of entity DTOs | DB connection error |
-| `GET_<ENTITY>_BY_ID` | `id:int` | Entity DTO or empty | invalid id |
-| `INSERT_<ENTITY>` | DTO fields | Inserted DTO with generated id | validation fail |
-| `UPDATE_<ENTITY>` | `id:int` + DTO fields | Updated DTO | not found |
-| `DELETE_<ENTITY>` | `id:int` | boolean or message | not found |
-| `FILTER_<ENTITY>` | filter params (your design) | List of matching | invalid filter |
-
+| Request Type | Description | Required Fields |
+|---|---|---|
+| `GET_ALL` | Returns all records for an entity | `entity` |
+| `GET_BY_ID` | Returns a single entity by ID | `entity`, `id` |
+| `CREATE` | Inserts a new entity into the database | `entity`, `entityData` |
+| `UPDATE` | Updates an existing entity | `entity`, `id`, `entityData` |
+| `DELETE` | Deletes an entity by ID | `entity`, `id` |
+| `UPLOAD_FILE` | Uploads a binary file to a ServiceJob | `entity`, `id`, `base64FileData`, `fileName`, `contentType` |
 > Note: Stage 1 filtering is via `Predicate<T>` internally; don’t implement “SQL string filters” per request.
+
+
+### 4.3 Example Requests
+
+#### Get Customer by ID
+
+```json
+{
+  "entity": "CUSTOMER",
+  "action": "GET_BY_ID",
+  "id": 1
+}
+```
+
+---
+
+#### Create Vehicle
+
+```json
+{
+  "entity": "VEHICLE",
+  "action": "CREATE",
+  "entityData": "{ \"customerId\":1, \"make\":\"Toyota\", \"model\":\"Corolla\" }"
+}
+```
+
+---
+
+#### Upload File to Service Job (F18)
+
+```json
+{
+  "entity": "SERVICEJOB",
+  "action": "UPLOAD_FILE",
+  "id": 3,
+  "base64FileData": "JVBERi0xLjQKJcfs...",
+  "fileName": "receipt.pdf",
+  "contentType": "application/pdf",
+  "fileSize": 20480
+}
+```
+
+---
+
+### 4.4 Error Handling
+
+The server always responds using `ServerResponse<T>`.
+
+Example error response:
+
+```json
+{
+  "status": "ERROR",
+  "message": "Service job not found",
+  "data": null
+}
+```
+
+Possible errors include:
+
+- Invalid entity name
+- Unsupported action
+- Missing ID
+- Validation failures
+- Database connection errors
+- Invalid Base64 file data
+- Entity not found
 
 ---
 
