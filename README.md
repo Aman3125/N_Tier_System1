@@ -11,17 +11,17 @@ generated_at: "2026-02-20 09:00 Europe/Dublin"
 
 ## 1. Project Overview
 
-### Domain summary (150–200 words)
-> **Replace this text** with your approved domain description.  
-> Include: what the system does, who it is for, and what the core “things” are (entities).  
-> Mention what binary file storage represents in your domain (e.g., profile images, evidence photos, receipts, audio clips, etc.).
+The Garage Management System is a Java client-server application made to help manage a car garage. The system is designed for garage workers and administrators to keep track of customers, vehicles, and service jobs in an organised way. The program uses Java sockets for communication between the client and server, JDBC to connect to the database, and MySQL to store all the information permanently.
+
+The main parts of the system are Customers, Vehicles, and Service Jobs. A customer can own one or more vehicles, and each vehicle can have different service jobs such as repairs, oil changes, diagnostics, or maintenance work. The system allows users to add, view, update, and delete records using a menu-driven client application connected to a multithreaded server.
+
+The project also supports binary file upload and download features. This allows files such as invoices, receipts, repair reports, or vehicle documents to be attached to a service job. The files are stored directly in the database as binary data and can later be downloaded back onto the client computer when needed.
 
 ### Team
-- **Group ID:** `2025-26-L8-OOP-GCA2-GroupXX`
+- **Group ID:** `2025-26-L8-OOP-GCA2-SD2B`
 - **Members:**
-  - Student A — `C00XXXX`
-  - Student B — `C00XXXX`
-  - Student C — `C00XXXX`
+  - Student A — `Aman Akhtar`
+  - Student B — `Abdirahman Farah`
 
 ### Key features
 - JDBC DAO layer with full CRUD (Stage 1 foundation)
