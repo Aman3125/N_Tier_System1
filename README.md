@@ -38,49 +38,102 @@ The project also supports binary file upload and download features. This allows 
 ## 2. How to Run
 
 ### Prerequisites
-- Java: `17+` (or the version used in labs)
+- Java JDK 17+
 - IntelliJ IDEA (recommended)
-- MySQL Server (local)
-- Maven/Gradle (as per your project setup)
+- MySQL Server (local installation)
+- Maven/Gradle dependencies configured
+- Gson library included in project dependencies
 
 ### 2.1 Database setup
-1. Create a database (example): `gca2_db`
-2. Run the script:
-   - `sql/mysqlSetup.sql`
-3. Verify seed data:
-   - Each table has at least 10 rows.
+Create a database:
+
+CREATE DATABASE car_garage_db;
+
+Run the SQL setup script provided in the project.
+
+The script will:
+
+- create the customer, vehicle, and service_job tables
+- create foreign key relationships
+- insert sample data into all tables
+- create indexes for service job status
+
+Verify that:
+
+- all tables are created successfully
+- sample data exists in each table
+- service_job contains the binary file columns:
+- file_data
+- file_name
+- content_type
+- file_size
 
 ### 2.2 Configure credentials
-Create a local config file (do **not** commit credentials):
-- `config/db.properties` (example keys)
-  - `db.url=jdbc:mysql://localhost:3306/gca2_db`
-  - `db.user=...`
-  - `db.password=...`
+Open:
+
+DatabaseConnection.java
+
+Update the database connection details if required:
+
+private static final String URL =
+        "jdbc:mysql://localhost:3306/car_garage_db";
+
+private static final String USER = "root";
+
+private static final String PASSWORD = "your_password";
 
 ### 2.3 Run the server
-- Main class: `server.ServerMain`
-- Default port: `5000` (or your chosen port)
-- Expected output:
-  - “Server listening on …”
-  - Logs for client connect/disconnect
+Main class:
+
+daoexample.net.GarageServer
+
+Default port:
+
+5050
+
+Expected output:
+
+Server running on port 5050
+
+The server must remain running before starting the client.
+The server uses ExecutorService to handle multiple clients simultaneously.
 
 ### 2.4 Run the client(s)
-- Main class: `client.ClientMain`
-- Run **two clients simultaneously** for Stage 2+ demonstration.
+Main class:
+
+daoexample.net.GarageClient
+
+The console menu will appear with all available operations.
+
+Example:
+
+=== Garage Client Menu ===
+1. Display Customer by ID
+2. Display All Customers
+3. Display Vehicle by ID
 
 ---
 
 ## 3. Architecture Summary
 
 ### 3.1 N-tier overview
-- Client (UI / console)
-- Server (socket listener + request handlers + threading)
-- DAO layer (interfaces + JDBC implementations)
-- Database (MySQL)
+This project follows an N-tier architecture. Each layer has a separate responsibility, which helps keep the system organised and easier to maintain.
+- Client layer: GarageClient provides the console menu used by the user. It sends JSON requests to the server and displays the server responses.
+- Server layer: GarageServer listens for client connections using sockets. Each client is passed to a ClientHandler, and ExecutorService allows multiple clients to be handled at the same time.
+- DAO layer: DAO interfaces define the database operations, while JDBC implementation classes perform the actual SQL queries using PreparedStatement.
+- Database layer: MySQL stores the customer, vehicle, and service job data. It also stores uploaded binary files as BLOB data with file metadata.
+
+The main flow is:
+
+Client → JSON Request → Server → DAO → MySQL Database
+Client ← JSON Response ← Server ← DAO ← MySQL Database
 
 ### 3.2 Architecture diagram
 - Path: `docs/architecture.md`
-- Diagram format: Mermaid (preferred)
+- Diagram format: Mermaid
+
+  <img width="4892" height="621" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/af382855-6a01-49c7-abb5-1c7ab87fa168" />
+
 
 ---
 
