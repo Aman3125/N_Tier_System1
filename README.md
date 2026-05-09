@@ -1,3 +1,11 @@
+
+
+
+
+
+
+
+
 ---
 title: "GCA2 — N-tier System"
 subtitle: "README"
@@ -443,8 +451,10 @@ This allows flexible filtering logic without creating multiple separate methods.
 ---
 
 ## 8. Screencast (Stage 4)
+Abdi was meant to do part 1 of the video but was having troubles so i have done 
+and thats why this part 1 video was added late.
 
-- Part 1 =
+- Part 1 = https://github.com/user-attachments/assets/845a4d35-e23e-4dc3-ac83-0116585aaeb6
 - Part 2 = https://github.com/user-attachments/assets/cc969226-5410-4bf0-bcfd-02468d6b1181
 
 
